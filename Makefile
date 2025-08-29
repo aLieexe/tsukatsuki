@@ -9,7 +9,12 @@ help:
 .PHONY: dev
 ## dev: start go-air, enable hot reload
 dev:
-	air
+	watchexec -r -e go --clear --wrap-process session -- "go run main.go"
+
+.PHONY: dev/init
+dev/init:
+	watchexec -r -e go --clear --wrap-process session -- "go run main.go init"
+
 
 ## tidy: format all .go files and tidy module dependencies
 .PHONY: tidy
@@ -35,4 +40,8 @@ audit:
 .PHONY: run
 ## run: run the app
 run:
-	go run main.go
+	go run main.go $(filter-out $@,$(MAKECMDGOALS))
+
+%:
+	@:
+
