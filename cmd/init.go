@@ -7,19 +7,23 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aLieexe/tsukatsuki/internal/prompts"
+	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui/multiselect"
+	"github.com/aLieexe/tsukatsuki/internal/ui/singleselect"
 	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
 type UserInput struct {
-	ProductName *textinput.Output
-	// ServerIP
-	// ProductDomain
-	// Webserver
-	// Services
-	// Languages
-	// GithubActions
+	AppName       *textinput.Output
+	ServerIP      *textinput.Output
+	AppDomain     *textinput.Output
+	AppPort       *textinput.Output
+	Webserver     *singleselect.Output
+	Runtime       *multiselect.Selection
+	GithubActions *multiselect.Selection
 }
 
 // initCmd represents the init command
@@ -28,32 +32,77 @@ var initCmd = &cobra.Command{
 	Short: "Create a configuration file",
 	Long:  `This should create a configuration file, that later can be used to deploy using tsukatsuki deploy`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		// early init part
 		userInput := &UserInput{
-			ProductName: &textinput.Output{},
+			AppName:   &textinput.Output{},
+			AppPort:   &textinput.Output{},
+			ServerIP:  &textinput.Output{},
+			AppDomain: &textinput.Output{},
+			Webserver: &singleselect.Output{},
 		}
 
-		initModel := textinput.InitializeTextinputModel(userInput.ProductName)
+		appConfig := &services.AppConfig{}
 
-		program := tea.NewProgram(initModel)
-		if _, err := program.Run(); err != nil {
+		selectionSchema := prompts.InitializeSelectionsSchema()
+
+		// AppName Question
+		teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", "tsukatsuki-app", appConfig))
+		if _, err := teaProgram.Run(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
 
-		fmt.Println(userInput.ProductName.Value)
+		appConfig.ProjectName = userInput.AppName.Value
+		appConfig.ExitCLI(teaProgram)
+
+		// //AppPort Question
+		// teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "4000", appConfig))
+		// if _, err := teaProgram.Run(); err != nil {
+		// 	fmt.Println(err)
+		// 	os.Exit(1)
+		// }
+
+		// converted, err := strconv.Atoi(userInput.AppPort.Value)
+		// if err != nil {
+		// 	fmt.Println("Invalid port duh")
+		// }
+		// appConfig.AppPort = converted
+		// appConfig.ExitCLI(teaProgram)
+
+		// //ServerIP Question
+		// teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", appConfig))
+		// if _, err := teaProgram.Run(); err != nil {
+		// 	fmt.Println(err)
+		// 	os.Exit(1)
+		// }
+
+		// appConfig.ServerIP = userInput.ServerIP.Value
+		// appConfig.ExitCLI(teaProgram)
+
+		// // AppDomain
+		// teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppDomain, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", appConfig))
+		// if _, err := teaProgram.Run(); err != nil {
+		// 	fmt.Println(err)
+		// 	os.Exit(1)
+		// }
+
+		// appConfig.AppDomain = userInput.AppDomain.Value
+		// appConfig.ExitCLI(teaProgram)
+
+		// webserver single select question
+		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], appConfig))
+		if _, err := teaProgram.Run(); err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		appConfig.Webserver = userInput.Webserver.Value
+		fmt.Println(appConfig.Webserver)
+		appConfig.ExitCLI(teaProgram)
+
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

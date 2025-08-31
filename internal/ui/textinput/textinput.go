@@ -3,6 +3,7 @@ package textinput
 import (
 	"fmt"
 
+	"github.com/aLieexe/tsukatsuki/internal/services"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
@@ -19,18 +20,23 @@ type model struct {
 	textInput textinput.Model
 	err       error
 	output    *Output
+	exit      *bool
+	header    string
 }
 
-func InitializeTextinputModel(output *Output) model {
+func InitializeTextinputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig) model {
 	ti := textinput.New()
 	ti.Focus()         // focus so it’s ready to type
 	ti.CharLimit = 100 // limit input length
 	ti.Width = 20      // how wide the input box is
+	ti.Placeholder = placeholder
 
 	return model{
 		textInput: ti,
 		err:       nil,
 		output:    output,
+		exit:      &appConfig.Exit,
+		header:    header,
 	}
 }
 
@@ -51,6 +57,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case tea.KeyCtrlC, tea.KeyEsc:
 			// Exit program without updating
+			*m.exit = true
 			return m, tea.Quit
 		}
 	}
@@ -61,5 +68,5 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf("Enter something:\n\n%s\n\n(Press Enter to submit)\n", m.textInput.View())
+	return fmt.Sprintf("%s: \n%s\n", m.header, m.textInput.View())
 }
