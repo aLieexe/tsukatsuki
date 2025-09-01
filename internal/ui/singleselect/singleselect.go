@@ -44,7 +44,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q", "esc":
+		case "ctrl+c", "q":
 			*m.exit = true
 			return m, tea.Quit
 
@@ -69,8 +69,8 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-
 	s := strings.Builder{}
+	s.WriteString("\n")
 	s.WriteString(m.promptSchema.Headers)
 	s.WriteString("\n")
 
@@ -85,9 +85,11 @@ func (m model) View() string {
 		s.WriteString(m.promptSchema.Options[i].Title)
 		s.WriteString("\n")
 		s.WriteString(m.promptSchema.Options[i].Description)
+		s.WriteString("\n")
+		s.WriteString("\n")
 
-		s.WriteString("\n(press q to quit)\n")
 	}
+	s.WriteString("(press q to quit, press enter to select)\n")
 
 	return s.String()
 }

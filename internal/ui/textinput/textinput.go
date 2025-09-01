@@ -27,8 +27,8 @@ type model struct {
 func InitializeTextinputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig) model {
 	ti := textinput.New()
 	ti.Focus()         // focus so it’s ready to type
-	ti.CharLimit = 100 // limit input length
-	ti.Width = 20      // how wide the input box is
+	ti.CharLimit = 100
+	ti.Width = 20
 	ti.Placeholder = placeholder
 
 	return model{
@@ -56,7 +56,6 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case tea.KeyCtrlC, tea.KeyEsc:
-			// Exit program without updating
 			*m.exit = true
 			return m, tea.Quit
 		}

@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
-	"github.com/aLieexe/tsukatsuki/internal/ui/multiselect"
 	"github.com/aLieexe/tsukatsuki/internal/ui/singleselect"
 	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -22,8 +22,8 @@ type UserInput struct {
 	AppDomain     *textinput.Output
 	AppPort       *textinput.Output
 	Webserver     *singleselect.Output
-	Runtime       *multiselect.Selection
-	GithubActions *multiselect.Selection
+	Runtime       *singleselect.Output
+	GithubActions *singleselect.Output
 }
 
 // initCmd represents the init command
@@ -33,13 +33,22 @@ var initCmd = &cobra.Command{
 	Long:  `This should create a configuration file, that later can be used to deploy using tsukatsuki deploy`,
 	Run: func(cmd *cobra.Command, args []string) {
 
+		if config.ConfigFileExist() {
+			// TODO: should ask if they want to reinitialize, remind the fact that config file already existed, if want to then continue, else quit
+
+		}
+		
+
 		// early init part
 		userInput := &UserInput{
 			AppName:   &textinput.Output{},
 			AppPort:   &textinput.Output{},
 			ServerIP:  &textinput.Output{},
 			AppDomain: &textinput.Output{},
-			Webserver: &singleselect.Output{},
+
+			Webserver:     &singleselect.Output{},
+			Runtime:       &singleselect.Output{},
+			GithubActions: &singleselect.Output{},
 		}
 
 		appConfig := &services.AppConfig{}
@@ -56,6 +65,7 @@ var initCmd = &cobra.Command{
 		appConfig.ProjectName = userInput.AppName.Value
 		appConfig.ExitCLI(teaProgram)
 
+		// TODO: uncommment everything
 		// //AppPort Question
 		// teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "4000", appConfig))
 		// if _, err := teaProgram.Run(); err != nil {
@@ -90,16 +100,35 @@ var initCmd = &cobra.Command{
 		// appConfig.AppDomain = userInput.AppDomain.Value
 		// appConfig.ExitCLI(teaProgram)
 
-		// webserver single select question
-		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], appConfig))
+		// // webserver single select question
+		// teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], appConfig))
+		// if _, err := teaProgram.Run(); err != nil {
+		// 	fmt.Println(err)
+		// 	os.Exit(1)
+		// }
+		// appConfig.Webserver = userInput.Webserver.Value
+		// appConfig.ExitCLI(teaProgram)
+
+		// //run time question
+		// teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], appConfig))
+		// if _, err := teaProgram.Run(); err != nil {
+		// 	fmt.Println(err)
+		// 	os.Exit(1)
+		// }
+		// appConfig.Runtime = userInput.Runtime.Value
+		// appConfig.ExitCLI(teaProgram)
+
+		// actions question
+		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], appConfig))
 		if _, err := teaProgram.Run(); err != nil {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		appConfig.Webserver = userInput.Webserver.Value
-		fmt.Println(appConfig.Webserver)
+		appConfig.GithubActions = userInput.GithubActions.Value
 		appConfig.ExitCLI(teaProgram)
 
+
+		
 	},
 }
 
