@@ -52,8 +52,6 @@ func CreateConfigFiles(cfg AppConfigYaml) error {
 		yaml.WithComment(commentMap),
 	)
 
-
-
 	err = os.WriteFile("tsukatsuki.yaml", modifiedData, 0644)
 	if err != nil {
 		return fmt.Errorf("writing file: %w", err)

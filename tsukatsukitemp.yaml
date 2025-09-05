@@ -2,12 +2,12 @@ project:
   name: tsukatsuki
   domain: placeholder.com
   port: 6969
-  runtime: go
+  runtime: Go
 server:
   ip: 127.0.0.1
 webserver:
-  type: caddy
+  type: Caddy
   ssl_email: ""
 github_actions:
-  mode: ci
+  mode: CI Only # ci | ci_cd
   branch: ""

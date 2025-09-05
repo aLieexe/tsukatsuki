@@ -3,6 +3,7 @@ package prompts
 type Item struct {
 	Title       string
 	Description string
+	Value       string
 }
 
 type SelectionSchema struct {
@@ -23,10 +24,12 @@ func InitializeSelectionsSchema() *Selections {
 					{
 						Title:       "Caddy",
 						Description: "A Modern Webserver Written in Golang",
+						Value:       "caddy",
 					},
 					{
 						Title:       "Nginx",
 						Description: "A battle-tested web server",
+						Value:       "nginx",
 					},
 				},
 			},
@@ -37,6 +40,7 @@ func InitializeSelectionsSchema() *Selections {
 					{
 						Title:       "Go",
 						Description: "Wait why is it only golang here? WDF",
+						Value:       "go",
 					},
 				},
 			},
@@ -47,11 +51,13 @@ func InitializeSelectionsSchema() *Selections {
 					{
 						Title:       "CI Only",
 						Description: "No need for any kind of configuration",
+						Value:       "ci",
 					},
 
 					{
 						Title:       "CI/CD",
 						Description: "Need to setup environtment secret to support CD",
+						Value:       "ci_cd",
 					},
 				},
 			},

@@ -1,5 +1,10 @@
 package utils
 
+import (
+	"os"
+	"path/filepath"
+)
+
 // func CheckServerReachable() error
 
 // func ValidateIP() error
@@ -13,3 +18,11 @@ package utils
 // func ReplaceWithHyphens ()
 
 // func CheckDomainDNSConfiguration ()
+
+func GetProjectDirectory() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return filepath.Base(dir)
+}

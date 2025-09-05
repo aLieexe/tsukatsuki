@@ -49,7 +49,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "enter":
-			m.output.update(m.promptSchema.Options[m.cursor].Title)
+			m.output.update(m.promptSchema.Options[m.cursor].Value)
 			return m, tea.Quit
 
 		case "down", "j":
