@@ -1,12 +1,17 @@
 /*
 Copyright © 2025 NAME HERE <EMAIL ADDRESS>
-
 */
 package cmd
 
 import (
 	"fmt"
+	"log"
+	"os"
 
+	"github.com/aLieexe/tsukatsuki/internal/config"
+	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
@@ -14,27 +19,28 @@ import (
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Create a deployment based on configuration file",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Long:  `Deploy the application based on the configuration detailed on tsukatsuki.yaml generated via tsukatsuki init`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("deploy called")
+		cfg := &services.AppConfig{}
+
+		if !config.ConfigFileExist() {
+			log.Println("please generate a config file with tsukatsuki init before deploying")
+			os.Exit(1)
+		}
+
+		// ask root password, or we cooked
+		var password textinput.Output
+
+		teaProgram := tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "", cfg))
+		_, err := teaProgram.Run()
+		if err != nil {
+			log.Println(err)
+		}
+
+		fmt.Println(password)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// deployCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// deployCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

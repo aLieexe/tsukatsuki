@@ -26,10 +26,29 @@ type model struct {
 
 func InitializeTextinputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig) model {
 	ti := textinput.New()
-	ti.Focus()         // focus so it’s ready to type
+	ti.Focus() // focus so it’s ready to type
 	ti.CharLimit = 100
 	ti.Width = 20
 	ti.Placeholder = placeholder
+
+	return model{
+		textInput: ti,
+		err:       nil,
+		output:    output,
+		exit:      &appConfig.Exit,
+		header:    header,
+	}
+}
+
+func InitializePasswordInputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig) model {
+	ti := textinput.New()
+	ti.Focus() // focus so it’s ready to type
+	ti.CharLimit = 100
+	ti.Width = 20
+	ti.Placeholder = placeholder
+
+	ti.EchoMode = textinput.EchoPassword
+	ti.EchoCharacter = '•'
 
 	return model{
 		textInput: ti,

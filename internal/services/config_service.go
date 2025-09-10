@@ -11,14 +11,16 @@ import (
 
 type AppConfig struct {
 	ProjectName string
-
-	AppDomain string
-	AppPort   int
+	AppDomain   string
+	AppPort     int
+	Runtime     string
 
 	ServerIP string
 
-	Webserver     string
-	Runtime       string
+	Webserver string
+	SSLEmail  string
+
+	Branch        string
 	GithubActions string
 
 	Exit bool
@@ -33,7 +35,6 @@ func setValue[T comparable](value, defaultValue T) T {
 }
 
 func (app *AppConfig) CreateConfigurationFile() error {
-
 	var cfg config.AppConfigYaml
 
 	cfg.Project.Name = setValue(app.ProjectName, utils.GetProjectDirectory())
@@ -59,4 +60,23 @@ func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
 
 		os.Exit(1)
 	}
+}
+
+// TODO: DO THIS RETARD DUMBASS BITCH
+func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
+	cfg := &AppConfig{
+		ProjectName: yamlConfig.Project.Name,
+		AppDomain:   yamlConfig.Project.Domain,
+		AppPort:     yamlConfig.Project.Port,
+		Runtime:     yamlConfig.Project.Runtime,
+
+		ServerIP: yamlConfig.Server.IP,
+
+		Webserver: yamlConfig.Webserver.Type,
+		SSLEmail:  yamlConfig.Webserver.SSLEmail,
+
+		Branch:        yamlConfig.GithubActions.Branch,
+		GithubActions: yamlConfig.GithubActions.Mode,
+	}
+	return cfg
 }

@@ -26,11 +26,6 @@ func InitializeSelectionsSchema() *Selections {
 						Description: "A Modern Webserver Written in Golang",
 						Value:       "caddy",
 					},
-					{
-						Title:       "Nginx",
-						Description: "A battle-tested web server",
-						Value:       "nginx",
-					},
 				},
 			},
 
@@ -52,12 +47,6 @@ func InitializeSelectionsSchema() *Selections {
 						Title:       "CI Only",
 						Description: "No need for any kind of configuration",
 						Value:       "ci",
-					},
-
-					{
-						Title:       "CI/CD",
-						Description: "Need to setup environtment secret to support CD",
-						Value:       "ci_cd",
 					},
 				},
 			},
