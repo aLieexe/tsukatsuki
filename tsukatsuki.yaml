@@ -9,5 +9,5 @@ webserver:
   type: caddy
   ssl_email: ""
 github_actions:
-  mode: ci
+  mode: none
   branch: ""

@@ -19,10 +19,12 @@ import (
 )
 
 type UserInput struct {
-	AppName       *textinput.Output
-	ServerIP      *textinput.Output
-	AppDomain     *textinput.Output
-	AppPort       *textinput.Output
+	AppName   *textinput.Output
+	ServerIP  *textinput.Output
+	AppDomain *textinput.Output
+	AppPort   *textinput.Output
+	Branch    *textinput.Output
+
 	Webserver     *singleselect.Output
 	Runtime       *singleselect.Output
 	GithubActions *singleselect.Output
@@ -45,6 +47,7 @@ var initCmd = &cobra.Command{
 			AppPort:   &textinput.Output{},
 			ServerIP:  &textinput.Output{},
 			AppDomain: &textinput.Output{},
+			Branch:    &textinput.Output{},
 
 			Webserver:     &singleselect.Output{},
 			Runtime:       &singleselect.Output{},
@@ -129,6 +132,17 @@ var initCmd = &cobra.Command{
 		err = appConfig.CreateConfigurationFile()
 		if err != nil {
 			log.Println(err)
+		}
+
+		if appConfig.GithubActions != "none" {
+			teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.Branch, "What branch do you want to use to trigger Github Actions", "main", appConfig))
+			if _, err := teaProgram.Run(); err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+
+			appConfig.Branch = userInput.Branch.Value
+			appConfig.ExitCLI(teaProgram)
 		}
 
 	},

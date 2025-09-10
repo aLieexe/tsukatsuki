@@ -44,6 +44,11 @@ func InitializeSelectionsSchema() *Selections {
 				Headers: "Do you want to setup github actions ",
 				Options: []Item{
 					{
+						Title:       "None",
+						Description: "No github workflow file will be generated",
+						Value:       "none",
+					},
+					{
 						Title:       "CI Only",
 						Description: "No need for any kind of configuration",
 						Value:       "ci",
