@@ -1,7 +1,7 @@
 project:
-  name: tsukatsuki
+  name: kldfaskd
   domain: placeholder.com
-  port: 6969
+  port: 80
   runtime: go
 server:
   ip: 127.0.0.1
