@@ -22,9 +22,10 @@ type model struct {
 	output    *Output
 	exit      *bool
 	header    string
+	validator func(string) error
 }
 
-func InitializeTextinputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig) model {
+func InitializeTextinputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig, validator func(string) error) model {
 	ti := textinput.New()
 	ti.Focus() // focus so it’s ready to type
 	ti.CharLimit = 100
@@ -37,6 +38,7 @@ func InitializeTextinputModel(output *Output, header string, placeholder string,
 		output:    output,
 		exit:      &appConfig.Exit,
 		header:    header,
+		validator: validator, // set it
 	}
 }
 
@@ -71,7 +73,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.Type {
 		case tea.KeyEnter:
-			m.output.update(m.textInput.Value())
+			val := m.textInput.Value()
+			if m.validator != nil {
+				if err := m.validator(val); err != nil {
+					m.err = err
+					return m, nil
+				}
+			}
+			m.output.update(val)
 			return m, tea.Quit
 
 		case tea.KeyCtrlC, tea.KeyEsc:
@@ -86,5 +95,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	return fmt.Sprintf("%s: \n%s\n", m.header, m.textInput.View())
+	view := fmt.Sprintf("%s: \n%s\n", m.header, m.textInput.View())
+	if m.err != nil {
+		view += fmt.Sprintf("error: %s\n", m.err.Error())
+	}
+	return view
 }

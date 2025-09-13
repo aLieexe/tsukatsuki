@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"log"
+	"net/url"
 	"os"
 	"strconv"
 
@@ -19,10 +20,12 @@ import (
 )
 
 type UserInput struct {
-	AppName       *textinput.Output
-	ServerIP      *textinput.Output
-	AppDomain     *textinput.Output
-	AppPort       *textinput.Output
+	AppName   *textinput.Output
+	ServerIP  *textinput.Output
+	AppDomain *textinput.Output
+	AppPort   *textinput.Output
+	Branch    *textinput.Output
+
 	Webserver     *singleselect.Output
 	Runtime       *singleselect.Output
 	GithubActions *singleselect.Output
@@ -45,6 +48,7 @@ var initCmd = &cobra.Command{
 			AppPort:   &textinput.Output{},
 			ServerIP:  &textinput.Output{},
 			AppDomain: &textinput.Output{},
+			Branch:    &textinput.Output{},
 
 			Webserver:     &singleselect.Output{},
 			Runtime:       &singleselect.Output{},
@@ -56,7 +60,7 @@ var initCmd = &cobra.Command{
 		selectionSchema := prompts.InitializeSelectionsSchema()
 
 		// AppName Question
-		teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), appConfig))
+		teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), appConfig, nil))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -66,7 +70,7 @@ var initCmd = &cobra.Command{
 		appConfig.ExitCLI(teaProgram)
 
 		//AppPort Question
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "6969", appConfig))
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "6969", appConfig, utils.PortValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -80,7 +84,7 @@ var initCmd = &cobra.Command{
 		appConfig.ExitCLI(teaProgram)
 
 		//ServerIP Question
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", appConfig))
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", appConfig, utils.IpValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -90,13 +94,13 @@ var initCmd = &cobra.Command{
 		appConfig.ExitCLI(teaProgram)
 
 		// AppDomain
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppDomain, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", appConfig))
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppDomain, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", appConfig, utils.SiteAddressValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
-
-		appConfig.AppDomain = userInput.AppDomain.Value
+		u, _ := url.Parse(userInput.AppDomain.Value)
+		appConfig.AppDomain = u.Host
 		appConfig.ExitCLI(teaProgram)
 
 		// webserver single select question
@@ -130,6 +134,19 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			log.Println(err)
 		}
+
+		if appConfig.GithubActions != "none" {
+			teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.Branch, "What branch do you want to use to trigger Github Actions", "main", appConfig, nil))
+			if _, err := teaProgram.Run(); err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+
+			appConfig.Branch = userInput.Branch.Value
+			appConfig.ExitCLI(teaProgram)
+		}
+
+		// TODO: Generate all the file according to the yaml file
 
 	},
 }

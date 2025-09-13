@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/aLieexe/tsukatsuki/internal/config"
@@ -24,20 +23,31 @@ var deployCmd = &cobra.Command{
 		cfg := &services.AppConfig{}
 
 		if !config.ConfigFileExist() {
-			log.Println("please generate a config file with tsukatsuki init before deploying")
+			fmt.Println("please generate a config file with tsukatsuki init before deploying")
 			os.Exit(1)
 		}
 
+		fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
+		// TODO: Guide, make sure it can ssh aswell
+
 		// ask root password, or we cooked
 		var password textinput.Output
+		var username textinput.Output
 
-		teaProgram := tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "", cfg))
+		teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(&username, "Username to use", "user1", cfg, nil))
 		_, err := teaProgram.Run()
 		if err != nil {
-			log.Println(err)
+			fmt.Println(err)
 		}
 
-		fmt.Println(password)
+		teaProgram = tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "0812083", cfg))
+		_, err = teaProgram.Run()
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// TODO: Execute stuff that are generated on init prompts,
+
 	},
 }
 

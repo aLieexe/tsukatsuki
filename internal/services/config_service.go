@@ -62,7 +62,6 @@ func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
 	}
 }
 
-// TODO: DO THIS RETARD DUMBASS BITCH
 func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 	cfg := &AppConfig{
 		ProjectName: yamlConfig.Project.Name,
