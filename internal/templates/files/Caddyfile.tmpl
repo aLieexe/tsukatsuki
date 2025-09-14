@@ -1,0 +1,9 @@
+{{.AppSiteAddress}} {
+	# Should be able to just let docker DNS handle the rest
+	reverse_proxy app:{{.Port}} {
+		header_up X-Forwarded-Proto {scheme}
+		header_up X-Url-Scheme {scheme}
+		header_up X-Real-IP {remote}
+	}
+	encode gzip zstd
+}

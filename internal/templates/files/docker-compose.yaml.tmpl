@@ -1,0 +1,17 @@
+services:
+{{range .Service}}
+  {{.}}
+{{end}}
+  app:
+    build:
+      context: .
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5500/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+volumes:
+{{range .Volumes}}
+  {{.}}:
+{{end}}

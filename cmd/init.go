@@ -20,11 +20,11 @@ import (
 )
 
 type UserInput struct {
-	AppName   *textinput.Output
-	ServerIP  *textinput.Output
-	AppDomain *textinput.Output
-	AppPort   *textinput.Output
-	Branch    *textinput.Output
+	AppName        *textinput.Output
+	ServerIP       *textinput.Output
+	AppSiteAddress *textinput.Output
+	AppPort        *textinput.Output
+	Branch         *textinput.Output
 
 	Webserver     *singleselect.Output
 	Runtime       *singleselect.Output
@@ -44,11 +44,11 @@ var initCmd = &cobra.Command{
 
 		// early init part
 		userInput := &UserInput{
-			AppName:   &textinput.Output{},
-			AppPort:   &textinput.Output{},
-			ServerIP:  &textinput.Output{},
-			AppDomain: &textinput.Output{},
-			Branch:    &textinput.Output{},
+			AppName:        &textinput.Output{},
+			AppPort:        &textinput.Output{},
+			ServerIP:       &textinput.Output{},
+			AppSiteAddress: &textinput.Output{},
+			Branch:         &textinput.Output{},
 
 			Webserver:     &singleselect.Output{},
 			Runtime:       &singleselect.Output{},
@@ -93,14 +93,14 @@ var initCmd = &cobra.Command{
 		appConfig.ServerIP = userInput.ServerIP.Value
 		appConfig.ExitCLI(teaProgram)
 
-		// AppDomain
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppDomain, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", appConfig, utils.SiteAddressValidator))
+		// AppSiteAddress
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", appConfig, utils.SiteAddressValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
-		u, _ := url.Parse(userInput.AppDomain.Value)
-		appConfig.AppDomain = u.Host
+		u, _ := url.Parse(userInput.AppSiteAddress.Value)
+		appConfig.AppSiteAddress = u.Host
 		appConfig.ExitCLI(teaProgram)
 
 		// webserver single select question

@@ -10,10 +10,10 @@ import (
 )
 
 type AppConfig struct {
-	ProjectName string
-	AppDomain   string
-	AppPort     int
-	Runtime     string
+	ProjectName    string
+	AppSiteAddress string
+	AppPort        int
+	Runtime        string
 
 	ServerIP string
 
@@ -38,7 +38,7 @@ func (app *AppConfig) CreateConfigurationFile() error {
 	var cfg config.AppConfigYaml
 
 	cfg.Project.Name = setValue(app.ProjectName, utils.GetProjectDirectory())
-	cfg.Project.Domain = setValue(app.AppDomain, "placeholder.com")
+	cfg.Project.Domain = setValue(app.AppSiteAddress, "placeholder.com")
 	cfg.Project.Port = setValue(app.AppPort, 6969)
 	cfg.Project.Runtime = setValue(app.Runtime, "go")
 
@@ -64,10 +64,10 @@ func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
 
 func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 	cfg := &AppConfig{
-		ProjectName: yamlConfig.Project.Name,
-		AppDomain:   yamlConfig.Project.Domain,
-		AppPort:     yamlConfig.Project.Port,
-		Runtime:     yamlConfig.Project.Runtime,
+		ProjectName:    yamlConfig.Project.Name,
+		AppSiteAddress: yamlConfig.Project.Domain,
+		AppPort:        yamlConfig.Project.Port,
+		Runtime:        yamlConfig.Project.Runtime,
 
 		ServerIP: yamlConfig.Server.IP,
 

@@ -1,0 +1,14 @@
+caddy:
+  image: caddy:2.10.2-alpine
+  restart: unless-stopped
+  ports:
+  - "80:80"
+  - "443:443"
+  - "443:443/udp"
+  volumes:
+  - ./conf:/etc/caddy
+  - caddy_data:/data
+  - caddy_config:/config
+  depends_on:
+    app:
+      condition: service_healthy
