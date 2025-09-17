@@ -26,6 +26,9 @@ type AppConfigYaml struct {
 		SSLEmail string `yaml:"ssl_email"`
 	} `yaml:"webserver"`
 
+	// Services []struct {
+	// }
+
 	GithubActions struct {
 		Mode   string `yaml:"mode"`
 		Branch string `yaml:"branch"`

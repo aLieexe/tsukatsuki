@@ -1,5 +1,5 @@
 project:
-  name: kldfaskd
+  name: Hello world
   domain: placeholder.com
   port: 80
   runtime: go

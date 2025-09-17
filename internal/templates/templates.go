@@ -5,7 +5,7 @@ import (
 )
 
 // This templates are used for files that directly gives out files
-type FileTemplates struct {
+type FileTemplate struct {
 	Content  []byte
 	Filename string
 }
@@ -22,22 +22,22 @@ var dockerComposeContent []byte
 //go:embed files/Dockerfile.tmpl
 var dockerfileContent []byte
 
-func (T *FileTemplates) Caddyfile() FileTemplates {
-	return FileTemplates{
+func (T *FileTemplate) Caddyfile() FileTemplate {
+	return FileTemplate{
 		Content:  caddyfileContents,
 		Filename: "Caddyfile",
 	}
 }
 
-func (T *FileTemplates) DockerCompose() FileTemplates {
-	return FileTemplates{
+func (T *FileTemplate) DockerCompose() FileTemplate {
+	return FileTemplate{
 		Content:  dockerComposeContent,
 		Filename: "docker-compose.yaml",
 	}
 }
 
-func (T *FileTemplates) Dockerfile() FileTemplates {
-	return FileTemplates{
+func (T *FileTemplate) Dockerfile() FileTemplate {
+	return FileTemplate{
 		Content:  dockerfileContent,
 		Filename: "Dockerfile",
 	}
