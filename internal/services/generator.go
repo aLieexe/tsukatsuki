@@ -16,6 +16,28 @@ type ComposeConfig struct {
 	Services []string
 }
 
+// ? All should just go output to the "tsukatsuki-generated" directory i guess?
+func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir string) error {
+	err := createOutputDirectory(outDir)
+	if err != nil {
+		return err
+	}
+
+	templateProvider := templates.NewTemplateProvider()
+
+	for _, templateName := range templateNeeded {
+		fileTemplate := templateProvider.GetFileTemplates()[templateName]
+		if err := app.generateStandardTemplate(&fileTemplate, templateName, outDir); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// TODO: Compose is a little special, so maybe later?
+func (app *AppConfig) GenerateCompose() {
+}
+
 // Create output directory, if not exist
 // return error if no permission for existing directory
 func createOutputDirectory(dir string) error {
@@ -60,30 +82,4 @@ func (app *AppConfig) generateStandardTemplate(fileTemplate *templates.FileTempl
 	}
 
 	return nil
-}
-
-// ? All should just go output to the "tsukatsuki-generated" directory i guess?
-func (app *AppConfig) GenerateConfigurationFiles() error {
-	outDir := "out"
-	err := createOutputDirectory(outDir)
-	if err != nil {
-		return err
-	}
-
-	templateProvider := templates.NewTemplateProvider()
-
-	templateNeeded := []string{"dockerfile", "caddy", "nginx"}
-
-	for _, templateName := range templateNeeded {
-		fileTemplate := templateProvider.GetFileTemplates()[templateName]
-		if err := app.generateStandardTemplate(&fileTemplate, templateName, outDir); err != nil {
-			return err
-		}
-	}
-
-	return nil
-}
-
-// TODO: Compose is a little special, so maybe later?
-func (app *AppConfig) GenerateCompose() {
 }

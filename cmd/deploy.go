@@ -31,10 +31,11 @@ var deployCmd = &cobra.Command{
 
 		cfg := services.NewAppConfigFromYaml(yamlConfig)
 
-		err = cfg.GenerateConfigurationFiles()
-		if err != nil {
-			fmt.Println(err)
-		}
+		res := make([]string, 1)
+		res = append(res, cfg.Webserver)
+
+		res = append(res, "dockerfile")
+		cfg.GenerateConfigurationFiles(res, "out")
 
 		// fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
 		// // TODO: Guide, make sure it can ssh aswell
