@@ -64,7 +64,6 @@ func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
 }
 
 func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
-
 	cfg := &AppConfig{
 		ProjectName:    yamlConfig.Project.Name,
 		AppSiteAddress: yamlConfig.Project.Domain,

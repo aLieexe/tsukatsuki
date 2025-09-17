@@ -150,7 +150,7 @@ var initCmd = &cobra.Command{
 		res = append(res, appConfig.Webserver)
 
 		res = append(res, "dockerfile")
-		appConfig.GenerateConfigurationFiles(res, "out")
+		appConfig.GenerateConfigurationFiles(res, "out/conf")
 
 	},
 }

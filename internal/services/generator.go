@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
+	"text/template"
 
 	"github.com/aLieexe/tsukatsuki/internal/templates"
 )
@@ -35,7 +35,55 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 }
 
 // TODO: Compose is a little special, so maybe later?
-func (app *AppConfig) GenerateCompose() {
+func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) error {
+	err := createOutputDirectory(outDir)
+	if err != nil {
+		return err
+	}
+
+	templateProvider := templates.NewTemplateProvider()
+	composeTemplate := templateProvider.GetFileTemplates()["dockercompose"]
+
+	tmpl, err := template.New("dockercompose").Option("missingkey=error").Parse(string(composeTemplate.Content))
+	if err != nil {
+		return fmt.Errorf("error parsing template %s: %w", composeTemplate.Filename, err)
+	}
+	// create output file
+	filePath := filepath.Join(outDir, composeTemplate.Filename)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	templateData := struct {
+		Service []string
+		Volumes []string
+	}{
+		Service: []string{},
+		Volumes: []string{},
+	}
+
+	presetProvider := templateProvider.GetComposePresetTemplates()
+	for _, presetName := range presetNeeded {
+		if preset, exists := presetProvider[presetName]; exists {
+			// add the services
+			serviceDefinition := string(preset.Content)
+			templateData.Service = append(templateData.Service, serviceDefinition)
+
+			// add volumes from preset
+			if preset.Volume != nil {
+				templateData.Volumes = append(templateData.Volumes, preset.Volume...)
+			}
+		}
+	}
+
+	err = tmpl.Execute(file, templateData)
+	if err != nil {
+		return fmt.Errorf("error executing template: %w", err)
+	}
+
+	return nil
 }
 
 // Create output directory, if not exist

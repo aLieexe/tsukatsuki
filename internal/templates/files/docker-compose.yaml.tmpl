@@ -1,7 +1,5 @@
 services:
-{{range .Service}}
-  {{.}}
-{{end}}
+{{range .Service}}  {{safeHTML .}}{{end}}
   app:
     build:
       context: .
@@ -12,6 +10,5 @@ services:
       retries: 3
 
 volumes:
-{{range .Volumes}}
-  {{.}}:
+{{range .Volumes}}  {{.}}:
 {{end}}

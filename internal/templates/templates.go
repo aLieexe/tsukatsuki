@@ -9,14 +9,14 @@ type FileTemplate struct {
 	Filename string
 }
 
-type PresetTemplates struct {
+type ComposePresetTemplates struct {
 	Content []byte
-	Name    string
+	Volume  []string
 }
 
 type TemplateProvider struct {
-	fileTemplates   map[string]FileTemplate
-	presetTemplates map[string]PresetTemplates
+	fileTemplates           map[string]FileTemplate
+	composePresetsTemplates map[string]ComposePresetTemplates
 }
 
 //go:embed files/Caddyfile.tmpl
@@ -37,8 +37,8 @@ var caddyCompose []byte
 // creates a new template provider with all templates
 func NewTemplateProvider() *TemplateProvider {
 	provider := &TemplateProvider{
-		fileTemplates:   make(map[string]FileTemplate),
-		presetTemplates: make(map[string]PresetTemplates),
+		fileTemplates:           make(map[string]FileTemplate),
+		composePresetsTemplates: make(map[string]ComposePresetTemplates),
 	}
 
 	// init file templates
@@ -47,7 +47,12 @@ func NewTemplateProvider() *TemplateProvider {
 		Filename: "Caddyfile",
 	}
 
-	provider.fileTemplates["dockerCompose"] = FileTemplate{
+	provider.fileTemplates["nginx"] = FileTemplate{
+		Content:  nginxConfContent,
+		Filename: "nginx.conf",
+	}
+
+	provider.fileTemplates["dockercompose"] = FileTemplate{
 		Content:  dockerComposeContent,
 		Filename: "docker-compose.yaml",
 	}
@@ -57,15 +62,15 @@ func NewTemplateProvider() *TemplateProvider {
 		Filename: "Dockerfile",
 	}
 
-	provider.fileTemplates["nginx"] = FileTemplate{
-		Content:  nginxConfContent,
-		Filename: "nginx.conf",
+	// init preset templates
+	provider.composePresetsTemplates["caddy"] = ComposePresetTemplates{
+		Content: caddyCompose,
+		Volume:  []string{"caddy_data", "caddy_config"},
 	}
 
-	// init preset templates
-	provider.presetTemplates["caddyCompose"] = PresetTemplates{
+	provider.composePresetsTemplates["nginx"] = ComposePresetTemplates{
 		Content: caddyCompose,
-		Name:    "caddy",
+		Volume:  nil,
 	}
 
 	return provider
@@ -75,16 +80,6 @@ func (tp *TemplateProvider) GetFileTemplates() map[string]FileTemplate {
 	return tp.fileTemplates
 }
 
-func (tp *TemplateProvider) GetPresetTemplates() map[string]PresetTemplates {
-	return tp.presetTemplates
-}
-
-func (tp *TemplateProvider) GetFileTemplate(name string) (FileTemplate, bool) {
-	template, exists := tp.fileTemplates[name]
-	return template, exists
-}
-
-func (tp *TemplateProvider) GetPresetTemplate(name string) (PresetTemplates, bool) {
-	template, exists := tp.presetTemplates[name]
-	return template, exists
+func (tp *TemplateProvider) GetComposePresetTemplates() map[string]ComposePresetTemplates {
+	return tp.composePresetsTemplates
 }
