@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
+	"html/template"
 	"os"
 	"path/filepath"
-	"text/template"
 
 	"github.com/aLieexe/tsukatsuki/internal/templates"
 )
@@ -39,6 +39,29 @@ func createOutputDirectory(dir string) error {
 	return nil
 }
 
+// This is only for standard file, i think ansible files can also be here? Not sure, but most likely yes
+func (app *AppConfig) generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName, outDir string) error {
+	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(string(fileTemplate.Content))
+	if err != nil {
+		return fmt.Errorf("error parsing template %s: %w", templateName, err)
+	}
+
+	// create output file
+	filePath := filepath.Join(outDir, fileTemplate.Filename)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("error creating file %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	// execute template with app context
+	if err := tmpl.Execute(file, app); err != nil {
+		return fmt.Errorf("error executing template %s: %w", templateName, err)
+	}
+
+	return nil
+}
+
 // ? All should just go output to the "tsukatsuki-generated" directory i guess?
 func (app *AppConfig) GenerateConfigurationFiles() error {
 	outDir := "out"
@@ -47,34 +70,20 @@ func (app *AppConfig) GenerateConfigurationFiles() error {
 		return err
 	}
 
-	FileTemplate := templates.FileTemplate{}
+	templateProvider := templates.NewTemplateProvider()
 
-	// TODO: Generate the configuration files, and all of its needed configuration (Caddyfile, Dockerfile, etc), Now how tf do i make this able to get scaled, reee
-	// Generate Caddyfile test
-	tmpl := template.New("tmpl").Option("missingkey=error")
-	tmpl = template.Must(tmpl.Parse(string(FileTemplate.Caddyfile().Content)))
-	file, err := os.Create(fmt.Sprint(outDir, "/", FileTemplate.Caddyfile().Filename))
-	if err != nil {
-		return err
+	templateNeeded := []string{"dockerfile", "caddy", "nginx"}
+
+	for _, templateName := range templateNeeded {
+		fileTemplate := templateProvider.GetFileTemplates()[templateName]
+		if err := app.generateStandardTemplate(&fileTemplate, templateName, outDir); err != nil {
+			return err
+		}
 	}
-	defer file.Close()
-
-	err = tmpl.Execute(file, app)
-	if err != nil {
-		return err
-	}
-
-	// Generate Dockerfile test
 
 	return nil
 }
 
+// TODO: Compose is a little special, so maybe later?
 func (app *AppConfig) GenerateCompose() {
-	// TODO: Generate docker compose files, and all of its needed configuration (Caddyfile, Dockerfile, etc)
-
 }
-
-// func (app *AppConfig) GenerateAnsibleFiles() {
-// 	// TODO: Generate Ansible-playbook, with roles already prepared and configured to the AppConfig
-
-// }

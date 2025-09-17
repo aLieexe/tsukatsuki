@@ -5,8 +5,10 @@ import (
 	"net"
 	"net/url"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 // func CheckServerReachable() error
@@ -52,6 +54,15 @@ func SiteAddressValidator(input string) error {
 	}
 
 	return nil
+}
+
+func GetMainFileLocation() string {
+	cmd := exec.Command("sh", "-c", `find . -type f -name "*.go" -exec grep -m1 -H '^func main()' {} + | grep -v '^[[:space:]]*//' | head -n1 | cut -d: -f1`)
+	out, err := cmd.Output()
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(out))
 }
 
 // // should be between debian, RHEL? Idk if there is difference between CentOS or Alma or other

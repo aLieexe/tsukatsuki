@@ -14,6 +14,7 @@ type AppConfig struct {
 	AppSiteAddress string
 	AppPort        int
 	Runtime        string
+	MainPath       string
 
 	ServerIP string
 
@@ -63,11 +64,13 @@ func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
 }
 
 func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
+
 	cfg := &AppConfig{
 		ProjectName:    yamlConfig.Project.Name,
 		AppSiteAddress: yamlConfig.Project.Domain,
 		AppPort:        yamlConfig.Project.Port,
 		Runtime:        yamlConfig.Project.Runtime,
+		MainPath:       utils.GetMainFileLocation(),
 
 		ServerIP: yamlConfig.Server.IP,
 
