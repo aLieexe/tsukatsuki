@@ -34,7 +34,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 	return nil
 }
 
-// TODO: Compose is a little special, so maybe later?
+// TODO: ADD MORE PRESETS, TEST IT
 func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) error {
 	err := createOutputDirectory(outDir)
 	if err != nil {
@@ -48,6 +48,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	if err != nil {
 		return fmt.Errorf("error parsing template %s: %w", composeTemplate.Filename, err)
 	}
+
 	// create output file
 	filePath := filepath.Join(outDir, composeTemplate.Filename)
 	file, err := os.Create(filePath)
@@ -56,6 +57,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	}
 	defer file.Close()
 
+	// temp to combine all the presets, 
 	templateData := struct {
 		Service []string
 		Volumes []string
