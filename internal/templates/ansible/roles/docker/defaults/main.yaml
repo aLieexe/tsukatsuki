@@ -1,0 +1,1 @@
+docker_apt_arch: "{{ 'arm64' if ansible_facts.architecture == 'aarch64' else 'armhf' if ansible_facts.architecture == 'armv7l' else 'amd64' }}"

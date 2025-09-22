@@ -29,6 +29,17 @@ func InitializeSelectionsSchema() *Selections {
 				},
 			},
 
+			// "services": {
+			// 	Headers: "Services choices",
+			// 	Options: []Item{
+			// 		{
+			// 			Title:       "Postgresql",
+			// 			Description: "Opensource database with elephant logo",
+			// 			Value:       "caddy",
+			// 		},
+			// 	},
+			// },
+
 			"runtime": {
 				Headers: "What runtime duh",
 				Options: []Item{

@@ -1,0 +1,27 @@
+- name: debug to check connection
+  ansible.builtin.debug:
+    msg:
+    - "Hello world"
+    - "How can i kill myself"
+
+- name: Sync all the project folder to home
+  ansible.posix.synchronize:
+    src: "{{ local_project_path }}/"
+    dest: "{{ remote_project_path }}"
+    rsync_opts:
+      - "--exclude-from={{ local_project_path }}/conf/.rsyncignore"
+      - "--no-motd"
+      - "--recursive"
+      - "--times"
+      - "--links"
+      - "--compress"
+      - "--delete"
+  become: false
+
+- name: Deploy application with Docker Compose
+  community.docker.docker_compose_v2:
+    project_src: "{{ remote_project_path }}/conf"
+    files: 
+      - "{{ compose_file_name }}"
+    state: present
+
