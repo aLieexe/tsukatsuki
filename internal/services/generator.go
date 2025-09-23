@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -23,10 +24,13 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	}
 
 	playbookData := struct {
-		Services []string
+		Roles []string
 	}{
-		Services: serviceList,
+		Roles: serviceList,
 	}
+
+	playbookData.Roles = append(playbookData.Roles, "common")
+	playbookData.Roles = append(playbookData.Roles, "docker")
 
 	templateProvider := templates.NewTemplateProvider()
 	fileTemplate := templateProvider.GetFileTemplates()["ansibleplaybook"]
@@ -43,6 +47,18 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	fileTemplate = templateProvider.GetFileTemplates()["ansiblevars"]
 	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", varsDir, app); err != nil {
 		return err
+	}
+
+	rolesSrcDir := "internal/templates/ansible/roles"
+	rolesDstDir := filepath.Join(outDir, "/roles")
+
+	for _, role := range playbookData.Roles {
+		src := filepath.Join(rolesSrcDir, role)
+		dst := filepath.Join(rolesDstDir, role)
+
+		if err := copyDir(src, dst); err != nil {
+			return fmt.Errorf("failed to copy %s: %v", role, err)
+		}
 	}
 
 	return nil
@@ -164,4 +180,46 @@ func generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName
 	}
 
 	return nil
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+		return err
+	}
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+func copyDir(srcDir, dstDir string) error {
+	return filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relativePath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(dstDir, relativePath)
+
+		if d.IsDir() {
+			return os.MkdirAll(targetPath, os.ModePerm)
+		}
+		return copyFile(path, targetPath)
+	})
 }
