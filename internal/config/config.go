@@ -12,7 +12,6 @@ import (
 type AppConfigYaml struct {
 	Project struct {
 		Name    string `yaml:"name"`
-		Domain  string `yaml:"domain"`
 		Port    int    `yaml:"port"`
 		Runtime string `yaml:"runtime"`
 	} `yaml:"project"`
@@ -24,10 +23,16 @@ type AppConfigYaml struct {
 	Webserver struct {
 		Type     string `yaml:"type"`
 		SSLEmail string `yaml:"ssl_email"`
+		Domain   string `yaml:"domain"`
 	} `yaml:"webserver"`
 
 	// Services []struct {
 	// }
+
+	Path struct {
+		LocalPath  string `yaml:"local_path"`
+		RemotePath string `yaml:"remote_path"`
+	}
 
 	GithubActions struct {
 		Mode   string `yaml:"mode"`

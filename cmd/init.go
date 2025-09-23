@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
@@ -41,7 +42,7 @@ var initCmd = &cobra.Command{
 			// TODO: should ask if they want to reinitialize, remind the fact that config file already existed, if want to then continue, else quit
 		}
 
-		appConfig := &services.AppConfig{}
+		cfg := services.NewAppConfig()
 
 		// early init part
 		userInput := &UserInput{
@@ -59,17 +60,17 @@ var initCmd = &cobra.Command{
 		selectionSchema := prompts.InitializeSelectionsSchema()
 
 		// AppName Question
-		teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), appConfig, nil))
+		teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), cfg, nil))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
 
-		appConfig.ProjectName = userInput.AppName.Value
-		appConfig.ExitCLI(teaProgram)
+		cfg.ProjectName = userInput.AppName.Value
+		cfg.ExitCLI(teaProgram)
 
 		//AppPort Question
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "6969", appConfig, utils.PortValidator))
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "6969", cfg, utils.PortValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
@@ -79,78 +80,82 @@ var initCmd = &cobra.Command{
 		if err != nil {
 			log.Println("port is invalid, defaulted to 6969")
 		}
-		appConfig.AppPort = converted
-		appConfig.ExitCLI(teaProgram)
+		cfg.AppPort = converted
+		cfg.ExitCLI(teaProgram)
 
 		//ServerIP Question
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", appConfig, utils.IpValidator))
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", cfg, utils.IpValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
 
-		appConfig.ServerIP = userInput.ServerIP.Value
-		appConfig.ExitCLI(teaProgram)
+		cfg.ServerIP = userInput.ServerIP.Value
+		cfg.ExitCLI(teaProgram)
 
 		// AppSiteAddress
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", appConfig, utils.SiteAddressValidator))
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", cfg, utils.SiteAddressValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
+		}
+
+		if !strings.HasPrefix(userInput.AppSiteAddress.Value, "http://") && !strings.HasPrefix(userInput.AppSiteAddress.Value, "https://") {
+			userInput.AppSiteAddress.Value = "http://" + userInput.AppSiteAddress.Value
 		}
 		u, _ := url.Parse(userInput.AppSiteAddress.Value)
-		appConfig.AppSiteAddress = u.Host
-		appConfig.ExitCLI(teaProgram)
+		cfg.AppSiteAddress = u.Host
+		cfg.ExitCLI(teaProgram)
 
 		// webserver single select question
-		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], appConfig))
+		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], cfg))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
-		appConfig.Webserver = userInput.Webserver.Value
-		appConfig.ExitCLI(teaProgram)
+		cfg.Webserver = userInput.Webserver.Value
+		cfg.ExitCLI(teaProgram)
 
 		//run time question
-		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], appConfig))
+		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
-		appConfig.Runtime = userInput.Runtime.Value
-		appConfig.ExitCLI(teaProgram)
+		cfg.Runtime = userInput.Runtime.Value
+		cfg.ExitCLI(teaProgram)
 
 		// actions question
-		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], appConfig))
+		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], cfg))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
 			os.Exit(1)
 		}
-		appConfig.GithubActions = userInput.GithubActions.Value
-		appConfig.ExitCLI(teaProgram)
+		cfg.GithubActions = userInput.GithubActions.Value
+		cfg.ExitCLI(teaProgram)
 
-		err = appConfig.CreateConfigurationFile()
+		err = cfg.CreateConfigurationFile()
 		if err != nil {
 			log.Println(err)
 		}
 
-		if appConfig.GithubActions != "none" {
-			teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.Branch, "What branch do you want to use to trigger Github Actions", "main", appConfig, nil))
+		if cfg.GithubActions != "none" {
+			teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.Branch, "What branch do you want to use to trigger Github Actions", "main", cfg, nil))
 			if _, err := teaProgram.Run(); err != nil {
 				log.Println(err)
 				os.Exit(1)
 			}
 
-			appConfig.Branch = userInput.Branch.Value
-			appConfig.ExitCLI(teaProgram)
+			cfg.Branch = userInput.Branch.Value
+			cfg.ExitCLI(teaProgram)
 		}
 
 		// TODO: Generate all the file according to the yaml file
 		res := make([]string, 1)
-		res = append(res, appConfig.Webserver)
+		res = append(res, cfg.Webserver)
 
 		res = append(res, "dockerfile")
-		appConfig.GenerateConfigurationFiles(res, "out/conf")
+		cfg.GenerateConfigurationFiles(res, "out/conf")
 
 	},
 }

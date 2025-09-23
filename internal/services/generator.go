@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -16,6 +17,53 @@ type ComposeConfig struct {
 	Services []string
 }
 
+func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) error {
+	err := createOutputDirectory(outDir)
+	if err != nil {
+		return err
+	}
+
+	playbookData := struct {
+		Roles []string
+	}{
+		Roles: serviceList,
+	}
+
+	playbookData.Roles = append(playbookData.Roles, "common")
+	playbookData.Roles = append(playbookData.Roles, "docker")
+
+	templateProvider := templates.NewTemplateProvider()
+	fileTemplate := templateProvider.GetFileTemplates()["ansibleplaybook"]
+	if err := generateStandardTemplate(&fileTemplate, "ansible-playbook", outDir, playbookData); err != nil {
+		return err
+	}
+
+	varsDir := filepath.Join(outDir, "/group_vars")
+	err = createOutputDirectory(varsDir)
+	if err != nil {
+		return err
+	}
+
+	fileTemplate = templateProvider.GetFileTemplates()["ansiblevars"]
+	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", varsDir, app); err != nil {
+		return err
+	}
+
+	rolesSrcDir := "internal/templates/ansible/roles"
+	rolesDstDir := filepath.Join(outDir, "/roles")
+
+	for _, role := range playbookData.Roles {
+		src := filepath.Join(rolesSrcDir, role)
+		dst := filepath.Join(rolesDstDir, role)
+
+		if err := copyDir(src, dst); err != nil {
+			return fmt.Errorf("failed to copy %s: %v", role, err)
+		}
+	}
+
+	return nil
+}
+
 // ? All should just go output to the "tsukatsuki-generated" directory i guess?
 func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir string) error {
 	err := createOutputDirectory(outDir)
@@ -27,7 +75,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 
 	for _, templateName := range templateNeeded {
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
-		if err := app.generateStandardTemplate(&fileTemplate, templateName, outDir); err != nil {
+		if err := generateStandardTemplate(&fileTemplate, templateName, outDir, app); err != nil {
 			return err
 		}
 	}
@@ -57,7 +105,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	}
 	defer file.Close()
 
-	// temp to combine all the presets, 
+	// temp to combine all the presets,
 	templateData := struct {
 		Service []string
 		Volumes []string
@@ -112,7 +160,7 @@ func createOutputDirectory(dir string) error {
 }
 
 // This is only for standard file, i think ansible files can also be here? Not sure, but most likely yes
-func (app *AppConfig) generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName, outDir string) error {
+func generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName, outDir string, data any) error {
 	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(string(fileTemplate.Content))
 	if err != nil {
 		return fmt.Errorf("error parsing template %s: %w", templateName, err)
@@ -126,10 +174,52 @@ func (app *AppConfig) generateStandardTemplate(fileTemplate *templates.FileTempl
 	}
 	defer file.Close()
 
-	// execute template with app context
-	if err := tmpl.Execute(file, app); err != nil {
+	// execute template with the data needed
+	if err := tmpl.Execute(file, data); err != nil {
 		return fmt.Errorf("error executing template %s: %w", templateName, err)
 	}
 
 	return nil
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
+		return err
+	}
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
+}
+
+func copyDir(srcDir, dstDir string) error {
+	return filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		relativePath, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+
+		targetPath := filepath.Join(dstDir, relativePath)
+
+		if d.IsDir() {
+			return os.MkdirAll(targetPath, os.ModePerm)
+		}
+		return copyFile(path, targetPath)
+	})
 }

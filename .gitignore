@@ -1,6 +1,9 @@
-tmp
-bin
-.vscode
-out
-testproject
-conf
+tmp/
+bin/
+.vscode/
+out/
+testproject/
+conf/
+.ansible/
+.air.toml
+tsukatsuki.yaml

@@ -31,6 +31,12 @@ var dockerfileContent []byte
 //go:embed files/nginx.conf.tmpl
 var nginxConfContent []byte
 
+//go:embed ansible/playbook.yaml.tmpl
+var ansiblePlaybookContent []byte
+
+//go:embed ansible/vars.yaml.tmpl
+var ansibleVarsContent []byte
+
 //go:embed compose_presets/caddy.tmpl
 var caddyCompose []byte
 
@@ -60,6 +66,16 @@ func NewTemplateProvider() *TemplateProvider {
 	provider.fileTemplates["dockerfile"] = FileTemplate{
 		Content:  dockerfileContent,
 		Filename: "Dockerfile",
+	}
+
+	provider.fileTemplates["ansibleplaybook"] = FileTemplate{
+		Content:  ansiblePlaybookContent,
+		Filename: "playbook.yaml",
+	}
+
+	provider.fileTemplates["ansiblevars"] = FileTemplate{
+		Content:  ansibleVarsContent,
+		Filename: "all.yaml",
 	}
 
 	// init preset templates
