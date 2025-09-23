@@ -75,7 +75,7 @@ func NewTemplateProvider() *TemplateProvider {
 
 	provider.fileTemplates["ansiblevars"] = FileTemplate{
 		Content:  ansibleVarsContent,
-		Filename: "vars.yaml",
+		Filename: "all.yaml",
 	}
 
 	// init preset templates

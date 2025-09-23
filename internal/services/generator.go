@@ -34,8 +34,14 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 		return err
 	}
 
+	varsDir := filepath.Join(outDir, "/group_vars")
+	err = createOutputDirectory(varsDir)
+	if err != nil {
+		return err
+	}
+
 	fileTemplate = templateProvider.GetFileTemplates()["ansiblevars"]
-	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", outDir, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", varsDir, app); err != nil {
 		return err
 	}
 

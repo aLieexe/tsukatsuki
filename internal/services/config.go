@@ -53,10 +53,7 @@ func NewAppConfig() *AppConfig {
 		SSLEmail:       "hello@gmail.com",
 
 		Branch:        "main",
-		GithubActions: "ci",
-
-		LocalPath:  utils.GetAbsolutePath(),
-		RemotePath: fmt.Sprintf("/home/tsukatsuki/%s", utils.GetProjectDirectory()),
+		GithubActions: "none",
 
 		Exit: false,
 	}
@@ -77,11 +74,11 @@ func (app *AppConfig) CreateConfigurationFile() error {
 	cfg.Webserver.Type = setValue(app.Webserver, "caddy")
 	cfg.Webserver.SSLEmail = setValue(app.SSLEmail, "hello@gmail.com")
 
-	cfg.GithubActions.Mode = setValue(app.GithubActions, "ci")
+	cfg.GithubActions.Mode = setValue(app.GithubActions, "none")
 	cfg.GithubActions.Branch = setValue(app.Branch, "main")
 
-	cfg.Path.LocalPath = setValue(app.LocalPath, utils.GetAbsolutePath())
-	cfg.Path.RemotePath = setValue(app.RemotePath, fmt.Sprintf("/home/tsukatsuki/%s", utils.GetProjectDirectory()))
+	cfg.Path.LocalPath = utils.GetAbsolutePath()
+	cfg.Path.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.Project.Name)
 
 	return config.CreateConfigFiles(cfg)
 }
@@ -109,6 +106,9 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 		Webserver:      yamlConfig.Webserver.Type,
 		SSLEmail:       yamlConfig.Webserver.SSLEmail,
 		AppSiteAddress: yamlConfig.Webserver.Domain,
+
+		LocalPath:  yamlConfig.Path.LocalPath,
+		RemotePath: yamlConfig.Path.RemotePath,
 
 		Branch:        yamlConfig.GithubActions.Branch,
 		GithubActions: yamlConfig.GithubActions.Mode,
