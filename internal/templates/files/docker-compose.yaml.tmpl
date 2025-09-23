@@ -1,5 +1,5 @@
 services:
-{{range .Service}}  {{safeHTML .}}{{end}}
+{{range .Service}}  {{.}}{{end}}
   app:
     build:
       context: .

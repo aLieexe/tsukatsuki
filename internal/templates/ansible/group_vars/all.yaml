@@ -1,6 +1,0 @@
-tsukatsuki_user: tsukatsuki
-project_name: tsukatsuki_proj
-local_project_path: "/home/alie/code/golang/tsukatsuki-eleph/ansible/source_project"
-remote_project_path: "/home/tsukatsuki/tsukatsuki_proj"
-ssh_key_folder_name: "key"
-compose_file_name: "docker-compose.yaml"

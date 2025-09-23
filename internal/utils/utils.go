@@ -81,3 +81,11 @@ func GetProjectDirectory() string {
 	}
 	return filepath.Base(dir)
 }
+
+func GetAbsolutePath() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return dir
+}

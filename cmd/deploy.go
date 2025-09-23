@@ -18,7 +18,6 @@ var deployCmd = &cobra.Command{
 	Short: "Create a deployment based on configuration file",
 	Long:  `Deploy the application based on the configuration detailed on tsukatsuki.yaml generated via tsukatsuki init`,
 	Run: func(cmd *cobra.Command, args []string) {
-
 		if !config.ConfigFileExist() {
 			fmt.Println("please generate a config file with tsukatsuki init before deploying")
 			os.Exit(1)
@@ -31,9 +30,21 @@ var deployCmd = &cobra.Command{
 
 		cfg := services.NewAppConfigFromYaml(yamlConfig)
 
-		res := make([]string, 1)
+		res := make([]string, 0)
 		res = append(res, cfg.Webserver)
-		cfg.GenerateCompose(res, "out")
+
+		err = cfg.GenerateCompose(res, "out/conf")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		err = cfg.GenerateAnsibleFiles(res, "out/ansible")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		res = append(res, "dockerfile")
+		cfg.GenerateConfigurationFiles(res, "out/conf")
 
 		// fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
 		// // TODO: Guide, make sure it can ssh aswell
@@ -55,7 +66,6 @@ var deployCmd = &cobra.Command{
 		// }
 
 		// // TODO: Execute stuff that are generated on init prompts,
-
 	},
 }
 

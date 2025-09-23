@@ -16,6 +16,32 @@ type ComposeConfig struct {
 	Services []string
 }
 
+func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) error {
+	err := createOutputDirectory(outDir)
+	if err != nil {
+		return err
+	}
+
+	playbookData := struct {
+		Services []string
+	}{
+		Services: serviceList,
+	}
+
+	templateProvider := templates.NewTemplateProvider()
+	fileTemplate := templateProvider.GetFileTemplates()["ansibleplaybook"]
+	if err := generateStandardTemplate(&fileTemplate, "ansible-playbook", outDir, playbookData); err != nil {
+		return err
+	}
+
+	fileTemplate = templateProvider.GetFileTemplates()["ansiblevars"]
+	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", outDir, app); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // ? All should just go output to the "tsukatsuki-generated" directory i guess?
 func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir string) error {
 	err := createOutputDirectory(outDir)
@@ -27,7 +53,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 
 	for _, templateName := range templateNeeded {
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
-		if err := app.generateStandardTemplate(&fileTemplate, templateName, outDir); err != nil {
+		if err := generateStandardTemplate(&fileTemplate, templateName, outDir, app); err != nil {
 			return err
 		}
 	}
@@ -57,7 +83,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	}
 	defer file.Close()
 
-	// temp to combine all the presets, 
+	// temp to combine all the presets,
 	templateData := struct {
 		Service []string
 		Volumes []string
@@ -112,7 +138,7 @@ func createOutputDirectory(dir string) error {
 }
 
 // This is only for standard file, i think ansible files can also be here? Not sure, but most likely yes
-func (app *AppConfig) generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName, outDir string) error {
+func generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName, outDir string, data any) error {
 	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(string(fileTemplate.Content))
 	if err != nil {
 		return fmt.Errorf("error parsing template %s: %w", templateName, err)
@@ -126,8 +152,8 @@ func (app *AppConfig) generateStandardTemplate(fileTemplate *templates.FileTempl
 	}
 	defer file.Close()
 
-	// execute template with app context
-	if err := tmpl.Execute(file, app); err != nil {
+	// execute template with the data needed
+	if err := tmpl.Execute(file, data); err != nil {
 		return fmt.Errorf("error executing template %s: %w", templateName, err)
 	}
 

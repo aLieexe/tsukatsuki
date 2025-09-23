@@ -2,7 +2,7 @@
   become: true
   become_method: sudo
   roles:
-  {{range .Volumes}}  -{{.}}
+  {{range .Services}}  -{{.}}
   {{end}}
 
 - hosts: deploy
