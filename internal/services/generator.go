@@ -33,8 +33,13 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	playbookData.Roles = append(playbookData.Roles, "docker")
 
 	templateProvider := templates.NewTemplateProvider()
-	fileTemplate := templateProvider.GetFileTemplates()["ansibleplaybook"]
-	if err := generateStandardTemplate(&fileTemplate, "ansible-playbook", outDir, playbookData); err != nil {
+	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]
+	if err := generateStandardTemplate(&fileTemplate, "setup-playbook", outDir, playbookData); err != nil {
+		return err
+	}
+
+	fileTemplate = templateProvider.GetFileTemplates()["ansible-inventory"]
+	if err := generateStandardTemplate(&fileTemplate, "inventory", outDir, app); err != nil {
 		return err
 	}
 
@@ -44,20 +49,26 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 		return err
 	}
 
-	fileTemplate = templateProvider.GetFileTemplates()["ansiblevars"]
+	fileTemplate = templateProvider.GetFileTemplates()["ansible-vars"]
 	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", varsDir, app); err != nil {
 		return err
 	}
 
+	// Copy the file that we wont need to template
+	copyFile("internal/templates/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
+	copyFile("internal/templates/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
+
 	rolesSrcDir := "internal/templates/ansible/roles"
 	rolesDstDir := filepath.Join(outDir, "/roles")
+
+	playbookData.Roles = append(playbookData.Roles, "deployment")
 
 	for _, role := range playbookData.Roles {
 		src := filepath.Join(rolesSrcDir, role)
 		dst := filepath.Join(rolesDstDir, role)
 
 		if err := copyDir(src, dst); err != nil {
-			return fmt.Errorf("failed to copy %s: %v", role, err)
+			return err
 		}
 	}
 
@@ -90,9 +101,9 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	}
 
 	templateProvider := templates.NewTemplateProvider()
-	composeTemplate := templateProvider.GetFileTemplates()["dockercompose"]
+	composeTemplate := templateProvider.GetFileTemplates()["docker-compose"]
 
-	tmpl, err := template.New("dockercompose").Option("missingkey=error").Parse(string(composeTemplate.Content))
+	tmpl, err := template.New("docker-compose").Option("missingkey=error").Parse(string(composeTemplate.Content))
 	if err != nil {
 		return fmt.Errorf("error parsing template %s: %w", composeTemplate.Filename, err)
 	}

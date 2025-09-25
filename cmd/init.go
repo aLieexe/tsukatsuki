@@ -4,6 +4,7 @@ Copyright © 2025 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"fmt"
 	"log"
 	"net/url"
 	"os"
@@ -26,6 +27,7 @@ type UserInput struct {
 	AppSiteAddress *textinput.Output
 	AppPort        *textinput.Output
 	Branch         *textinput.Output
+	SetupUser      *textinput.Output
 
 	Webserver     *singleselect.Output
 	Runtime       *singleselect.Output
@@ -51,6 +53,7 @@ var initCmd = &cobra.Command{
 			ServerIP:       &textinput.Output{},
 			AppSiteAddress: &textinput.Output{},
 			Branch:         &textinput.Output{},
+			SetupUser:      &textinput.Output{},
 
 			Webserver:     &singleselect.Output{},
 			Runtime:       &singleselect.Output{},
@@ -91,6 +94,16 @@ var initCmd = &cobra.Command{
 		}
 
 		cfg.ServerIP = userInput.ServerIP.Value
+		cfg.ExitCLI(teaProgram)
+
+		//Setup User
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SetupUser, "Please provide a sudo user that is not root", "user1", cfg, nil))
+		if _, err := teaProgram.Run(); err != nil {
+			log.Println(err)
+			os.Exit(1)
+		}
+
+		cfg.SetupUser = userInput.SetupUser.Value
 		cfg.ExitCLI(teaProgram)
 
 		// AppSiteAddress
@@ -151,8 +164,18 @@ var initCmd = &cobra.Command{
 		}
 
 		// TODO: Generate all the file according to the yaml file
-		res := make([]string, 1)
+		res := make([]string, 0)
 		res = append(res, cfg.Webserver)
+
+		err = cfg.GenerateCompose(res, "out/conf")
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		err = cfg.GenerateAnsibleFiles(res, "out/ansible")
+		if err != nil {
+			fmt.Println(err)
+		}
 
 		res = append(res, "dockerfile")
 		cfg.GenerateConfigurationFiles(res, "out/conf")

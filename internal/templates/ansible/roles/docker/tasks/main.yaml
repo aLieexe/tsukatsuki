@@ -44,20 +44,19 @@
       - docker-compose-plugin
     state: present
 
-- name: add the tsukatsuki deploy user to docker group
+- name: add the current user to docker group
   ansible.builtin.user:
-    name: "{{ tsukatsuki_user }}"
+    name: "{{ hostvars['deploy_user'].ansible_user }}"
     groups: docker
     append: yes
   notify: Restart docker
-
 
 - name: Copy docker daemon json
   ansible.builtin.copy:
     src: daemon.json
     dest: /etc/docker/daemon.json
-    owner: "{{ tsukatsuki_user }}"
-    group: "{{ tsukatsuki_user }}"
+    owner: "{{ hostvars['deploy_user'].ansible_user }}"
+    group: "{{ hostvars['deploy_user'].ansible_user }}"
     mode: '0644'
 
 - name: ensure docker service is started and enabled

@@ -31,11 +31,14 @@ var dockerfileContent []byte
 //go:embed files/nginx.conf.tmpl
 var nginxConfContent []byte
 
-//go:embed ansible/playbook.yaml.tmpl
-var ansiblePlaybookContent []byte
+//go:embed ansible/setup.yaml.tmpl
+var ansibleSetupContent []byte
 
-//go:embed ansible/vars.yaml.tmpl
+//go:embed ansible/all.yaml.tmpl
 var ansibleVarsContent []byte
+
+//go:embed ansible/inventory.ini.tmpl
+var ansibleInventoryContent []byte
 
 //go:embed compose_presets/caddy.tmpl
 var caddyCompose []byte
@@ -58,7 +61,7 @@ func NewTemplateProvider() *TemplateProvider {
 		Filename: "nginx.conf",
 	}
 
-	provider.fileTemplates["dockercompose"] = FileTemplate{
+	provider.fileTemplates["docker-compose"] = FileTemplate{
 		Content:  dockerComposeContent,
 		Filename: "docker-compose.yaml",
 	}
@@ -68,14 +71,19 @@ func NewTemplateProvider() *TemplateProvider {
 		Filename: "Dockerfile",
 	}
 
-	provider.fileTemplates["ansibleplaybook"] = FileTemplate{
-		Content:  ansiblePlaybookContent,
-		Filename: "playbook.yaml",
+	provider.fileTemplates["ansible-setup"] = FileTemplate{
+		Content:  ansibleSetupContent,
+		Filename: "setup.yaml",
 	}
 
-	provider.fileTemplates["ansiblevars"] = FileTemplate{
+	provider.fileTemplates["ansible-vars"] = FileTemplate{
 		Content:  ansibleVarsContent,
 		Filename: "all.yaml",
+	}
+
+	provider.fileTemplates["ansible-inventory"] = FileTemplate{
+		Content:  ansibleInventoryContent,
+		Filename: "inventory.ini",
 	}
 
 	// init preset templates

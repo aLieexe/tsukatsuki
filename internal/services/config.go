@@ -16,11 +16,11 @@ type AppConfig struct {
 	Runtime     string
 	MainPath    string
 
-	ServerIP string
+	ServerIP  string
+	SetupUser string
 
 	AppSiteAddress string
 	Webserver      string
-	SSLEmail       string
 
 	Branch        string
 	GithubActions string
@@ -46,18 +46,21 @@ func NewAppConfig() *AppConfig {
 		Runtime:     "go",
 		MainPath:    utils.GetMainFileLocation(),
 
-		ServerIP: "127.0.0.1",
+		ServerIP:  "127.0.0.1",
+		SetupUser: "user1",
 
 		AppSiteAddress: "placeholder.com",
 		Webserver:      "caddy",
-		SSLEmail:       "hello@gmail.com",
 
 		Branch:        "main",
 		GithubActions: "none",
 
+		LocalPath: utils.GetAbsolutePath(),
+
 		Exit: false,
 	}
 
+	cfg.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.ProjectName)
 	return cfg
 }
 
@@ -69,10 +72,10 @@ func (app *AppConfig) CreateConfigurationFile() error {
 	cfg.Project.Runtime = setValue(app.Runtime, "go")
 
 	cfg.Server.IP = setValue(app.ServerIP, "127.0.0.1")
+	cfg.Server.SetupUser = setValue(app.SetupUser, "user1")
 
 	cfg.Webserver.Domain = setValue(app.AppSiteAddress, "placeholder.com")
 	cfg.Webserver.Type = setValue(app.Webserver, "caddy")
-	cfg.Webserver.SSLEmail = setValue(app.SSLEmail, "hello@gmail.com")
 
 	cfg.GithubActions.Mode = setValue(app.GithubActions, "none")
 	cfg.GithubActions.Branch = setValue(app.Branch, "main")
@@ -81,6 +84,28 @@ func (app *AppConfig) CreateConfigurationFile() error {
 	cfg.Path.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.Project.Name)
 
 	return config.CreateConfigFiles(cfg)
+}
+
+func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
+	cfg := &AppConfig{
+		ProjectName: yamlConfig.Project.Name,
+		AppPort:     yamlConfig.Project.Port,
+		Runtime:     yamlConfig.Project.Runtime,
+		MainPath:    utils.GetMainFileLocation(),
+
+		ServerIP:  yamlConfig.Server.IP,
+		SetupUser: yamlConfig.Server.SetupUser,
+
+		Webserver:      yamlConfig.Webserver.Type,
+		AppSiteAddress: yamlConfig.Webserver.Domain,
+
+		LocalPath:  yamlConfig.Path.LocalPath,
+		RemotePath: yamlConfig.Path.RemotePath,
+
+		Branch:        yamlConfig.GithubActions.Branch,
+		GithubActions: yamlConfig.GithubActions.Mode,
+	}
+	return cfg
 }
 
 func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
@@ -92,26 +117,4 @@ func (app *AppConfig) ExitCLI(teaProgram *tea.Program) {
 
 		os.Exit(1)
 	}
-}
-
-func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
-	cfg := &AppConfig{
-		ProjectName: yamlConfig.Project.Name,
-		AppPort:     yamlConfig.Project.Port,
-		Runtime:     yamlConfig.Project.Runtime,
-		MainPath:    utils.GetMainFileLocation(),
-
-		ServerIP: yamlConfig.Server.IP,
-
-		Webserver:      yamlConfig.Webserver.Type,
-		SSLEmail:       yamlConfig.Webserver.SSLEmail,
-		AppSiteAddress: yamlConfig.Webserver.Domain,
-
-		LocalPath:  yamlConfig.Path.LocalPath,
-		RemotePath: yamlConfig.Path.RemotePath,
-
-		Branch:        yamlConfig.GithubActions.Branch,
-		GithubActions: yamlConfig.GithubActions.Mode,
-	}
-	return cfg
 }

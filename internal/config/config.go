@@ -17,13 +17,13 @@ type AppConfigYaml struct {
 	} `yaml:"project"`
 
 	Server struct {
-		IP string `yaml:"ip"`
+		IP   string `yaml:"ip"`
+		SetupUser string `yaml:"setup_user"`
 	} `yaml:"server"`
 
 	Webserver struct {
-		Type     string `yaml:"type"`
-		SSLEmail string `yaml:"ssl_email"`
-		Domain   string `yaml:"domain"`
+		Type   string `yaml:"type"`
+		Domain string `yaml:"domain"`
 	} `yaml:"webserver"`
 
 	// Services []struct {

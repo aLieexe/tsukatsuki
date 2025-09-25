@@ -1,0 +1,4 @@
+- hosts: deploy
+  become: false
+  roles:
+  - deployment

@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/aLieexe/tsukatsuki/internal/config"
-	"github.com/aLieexe/tsukatsuki/internal/services"
 	"github.com/spf13/cobra"
 )
 
@@ -23,28 +22,12 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		yamlConfig, err := config.GetConfigFromFiles()
-		if err != nil {
-			fmt.Println(err)
-		}
+		// yamlConfig, err := config.GetConfigFromFiles()
+		// if err != nil {
+		// 	fmt.Println(err)
+		// }
 
-		cfg := services.NewAppConfigFromYaml(yamlConfig)
-
-		res := make([]string, 0)
-		res = append(res, cfg.Webserver)
-
-		err = cfg.GenerateCompose(res, "out/conf")
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		err = cfg.GenerateAnsibleFiles(res, "out/ansible")
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		res = append(res, "dockerfile")
-		cfg.GenerateConfigurationFiles(res, "out/conf")
+		// cfg := services.NewAppConfigFromYaml(yamlConfig)
 
 		// fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
 		// // TODO: Guide, make sure it can ssh aswell

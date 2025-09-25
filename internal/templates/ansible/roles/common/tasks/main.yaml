@@ -36,7 +36,7 @@
 
 - name: Create a user
   ansible.builtin.user:
-    name: "{{ tsukatsuki_user }}"
+    name: "{{ hostvars['deploy_user'].ansible_user }}"
     create_home: yes
     generate_ssh_key: yes
     ssh_key_bits: 2048
@@ -51,27 +51,12 @@
 
 - name: Set authorized key taken from file
   ansible.posix.authorized_key:
-    user: "{{ tsukatsuki_user }}"
+    user: "{{ hostvars['deploy_user'].ansible_user }}"
     state: present
     key: "{{ user_info.ssh_public_key }}"
-
-- name: Set authorized key taken from file
-  ansible.posix.authorized_key:
-    user: "alie"
-    state: present
-    key: "{{ user_info.ssh_public_key }}"
-
-
 
 - name: Fetch private key to manager
   ansible.builtin.fetch:
-    src: "/home/{{ tsukatsuki_user }}/.ssh/id_rsa"
-    dest: "{{ playbook_dir }}/key/{{ tsukatsuki_user }}"
-    flat: yes
-
-
-- name: Fetch public key to manager
-  ansible.builtin.fetch:
-    src: "/home/{{ tsukatsuki_user }}/.ssh/id_rsa.pub"
-    dest: "{{ playbook_dir }}/key/{{ tsukatsuki_user }}.pub"
+    src: "/home/{{ hostvars['deploy_user'].ansible_user }}/.ssh/id_rsa"
+    dest: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
     flat: yes
