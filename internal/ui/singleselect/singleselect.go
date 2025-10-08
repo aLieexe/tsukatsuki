@@ -3,9 +3,10 @@ package singleselect
 import (
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 type Output struct {

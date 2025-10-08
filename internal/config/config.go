@@ -17,7 +17,7 @@ type AppConfigYaml struct {
 	} `yaml:"project"`
 
 	Server struct {
-		IP   string `yaml:"ip"`
+		IP        string `yaml:"ip"`
 		SetupUser string `yaml:"setup_user"`
 	} `yaml:"server"`
 

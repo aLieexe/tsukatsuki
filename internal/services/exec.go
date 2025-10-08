@@ -21,10 +21,8 @@ func execCmd(cmd *exec.Cmd, errorPatterns ...string) error {
 	cmd.Stderr = mStderr
 
 	err := cmd.Run()
-
 	if err != nil {
 		return fmt.Errorf("process error : %w", err)
-
 	}
 
 	stdout := stdoutBuf.String()
@@ -61,6 +59,10 @@ func ExecAnsible(playbookPath string) error {
 
 // This should be used as a fallback, in the case that the one with inventory.ini dont work
 func ExecAnsibleWithPassword(playbookPath string, password string) error {
+	if !strings.HasSuffix(playbookPath, ".yml") {
+		return fmt.Errorf("invalid playbook file")
+	}
+
 	cmd := exec.Command(
 		"ansible-playbook",
 		playbookPath,

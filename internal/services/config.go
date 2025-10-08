@@ -5,9 +5,10 @@ import (
 	"log"
 	"os"
 
+	tea "github.com/charmbracelet/bubbletea"
+
 	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/aLieexe/tsukatsuki/internal/utils"
-	tea "github.com/charmbracelet/bubbletea"
 )
 
 type AppConfig struct {

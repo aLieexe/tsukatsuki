@@ -11,14 +11,15 @@ import (
 	"strconv"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
+
 	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
 	"github.com/aLieexe/tsukatsuki/internal/ui/singleselect"
 	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
 	"github.com/aLieexe/tsukatsuki/internal/utils"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/spf13/cobra"
 )
 
 type UserInput struct {

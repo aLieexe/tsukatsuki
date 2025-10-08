@@ -7,8 +7,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/spf13/cobra"
+
+	"github.com/aLieexe/tsukatsuki/internal/config"
 )
 
 // deployCmd represents the deploy command

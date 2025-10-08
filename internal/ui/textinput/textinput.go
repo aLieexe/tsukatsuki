@@ -3,9 +3,10 @@ package textinput
 import (
 	"fmt"
 
-	"github.com/aLieexe/tsukatsuki/internal/services"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+
+	"github.com/aLieexe/tsukatsuki/internal/services"
 )
 
 type Output struct {
@@ -89,7 +90,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	//if its not a key that we handle that mean we can update it again
+	// if its not a key that we handle that mean we can update it again
 	m.textInput, cmd = m.textInput.Update(msg)
 	return m, cmd
 }
