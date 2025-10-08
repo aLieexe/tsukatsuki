@@ -72,7 +72,7 @@ var initCmd = &cobra.Command{
 		cfg.ProjectName = userInput.AppName.Value
 		cfg.ExitCLI(teaProgram)
 
-		//AppPort Question
+		// AppPort Question
 		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "6969", cfg, utils.PortValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
@@ -86,7 +86,7 @@ var initCmd = &cobra.Command{
 		cfg.AppPort = converted
 		cfg.ExitCLI(teaProgram)
 
-		//ServerIP Question
+		// ServerIP Question
 		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", cfg, utils.IpValidator))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
@@ -96,7 +96,7 @@ var initCmd = &cobra.Command{
 		cfg.ServerIP = userInput.ServerIP.Value
 		cfg.ExitCLI(teaProgram)
 
-		//Setup User
+		// Setup User
 		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SetupUser, "Please provide a sudo user that is not root", "user1", cfg, nil))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
@@ -129,7 +129,7 @@ var initCmd = &cobra.Command{
 		cfg.Webserver = userInput.Webserver.Value
 		cfg.ExitCLI(teaProgram)
 
-		//run time question
+		// run time question
 		teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
 		if _, err := teaProgram.Run(); err != nil {
 			log.Println(err)
@@ -163,7 +163,6 @@ var initCmd = &cobra.Command{
 			cfg.ExitCLI(teaProgram)
 		}
 
-		// TODO: Generate all the file according to the yaml file
 		res := make([]string, 0)
 		res = append(res, cfg.Webserver)
 
@@ -178,8 +177,10 @@ var initCmd = &cobra.Command{
 		}
 
 		res = append(res, "dockerfile")
-		cfg.GenerateConfigurationFiles(res, "out/conf")
-
+		err = cfg.GenerateConfigurationFiles(res, "out/conf")
+		if err != nil {
+			fmt.Println(err)
+		}
 	},
 }
 

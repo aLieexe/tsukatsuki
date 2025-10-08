@@ -55,8 +55,15 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	}
 
 	// Copy the file that we wont need to template
-	copyFile("internal/templates/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
-	copyFile("internal/templates/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
+	err = copyFile("internal/templates/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
+	if err != nil {
+		return err
+	}
+
+	err = copyFile("internal/templates/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
+	if err != nil {
+		return err
+	}
 
 	rolesSrcDir := "internal/templates/ansible/roles"
 	rolesDstDir := filepath.Join(outDir, "/roles")
@@ -114,7 +121,14 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	if err != nil {
 		return fmt.Errorf("error creating file %s: %w", filePath, err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
 
 	// temp to combine all the presets,
 	templateData := struct {
@@ -150,7 +164,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 // Create output directory, if not exist
 // return error if no permission for existing directory
 func createOutputDirectory(dir string) error {
-	err := os.Mkdir(dir, 0755)
+	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
 		if errors.Is(err, os.ErrExist) {
 			// if the dir already exists then test the write permission
@@ -159,9 +173,12 @@ func createOutputDirectory(dir string) error {
 			if writeErr != nil {
 				return fmt.Errorf("no write permission in %q: %w", dir, writeErr)
 			}
-			f.Close()
-			os.Remove(testFile) // clean up
-			return nil
+			err := f.Close()
+			if err != nil {
+				return err
+			}
+			err = os.Remove(testFile) // clean up
+			return err
 		}
 		// i think parent dir permission also go here? not sure
 		return err
@@ -183,7 +200,14 @@ func generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName
 	if err != nil {
 		return fmt.Errorf("error creating file %s: %w", filePath, err)
 	}
-	defer file.Close()
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
 
 	// execute template with the data needed
 	if err := tmpl.Execute(file, data); err != nil {
@@ -198,7 +222,18 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+
+	defer func() {
+		if closeError := srcFile.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	if err != nil {
+		return err
+	}
 
 	// Ensure destination directory exists
 	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
@@ -209,7 +244,14 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+
+	defer func() {
+		if closeError := dstFile.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
 
 	_, err = io.Copy(dstFile, srcFile)
 	return err
