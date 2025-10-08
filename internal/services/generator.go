@@ -26,11 +26,12 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	playbookData := struct {
 		Roles []string
 	}{
-		Roles: serviceList,
+		Roles: make([]string, 0),
 	}
 
 	playbookData.Roles = append(playbookData.Roles, "common")
 	playbookData.Roles = append(playbookData.Roles, "docker")
+	playbookData.Roles = append(playbookData.Roles, serviceList...)
 
 	templateProvider := templates.NewTemplateProvider()
 	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]

@@ -9,7 +9,7 @@
     src: "{{ local_project_path }}/"
     dest: "{{ remote_project_path }}"
     rsync_opts:
-      - "--exclude-from={{ local_project_path }}/conf/.rsyncignore"
+      - "--exclude-from={{ local_project_path }}/out/conf/.rsyncignore"
       - "--no-motd"
       - "--recursive"
       - "--times"

@@ -7,9 +7,12 @@ import (
 	"fmt"
 	"os"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 
 	"github.com/aLieexe/tsukatsuki/internal/config"
+	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
 )
 
 // deployCmd represents the deploy command
@@ -23,33 +26,38 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		// yamlConfig, err := config.GetConfigFromFiles()
-		// if err != nil {
-		// 	fmt.Println(err)
-		// }
+		yamlConfig, err := config.GetConfigFromFiles()
+		if err != nil {
+			fmt.Println(err)
+		}
 
-		// cfg := services.NewAppConfigFromYaml(yamlConfig)
+		cfg := services.NewAppConfigFromYaml(yamlConfig)
 
-		// fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
-		// // TODO: Guide, make sure it can ssh aswell
+		fmt.Println("Running server setup with inventory.ini")
 
-		// // ask root password, or we cooked
-		// var password textinput.Output
-		// var username textinput.Output
+		err = services.ExecAnsible("out/ansible", "setup.yaml")
+		if err != nil {
+			fmt.Println(err)
+		}
 
-		// teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(&username, "Username to use", "user1", cfg, nil))
-		// _, err := teaProgram.Run()
-		// if err != nil {
-		// 	fmt.Println(err)
-		// }
+		fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
+		var password textinput.Output
 
-		// teaProgram = tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "0812083", cfg))
-		// _, err = teaProgram.Run()
-		// if err != nil {
-		// 	fmt.Println(err)
-		// }
+		teaProgram := tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "12345678", cfg))
+		_, err = teaProgram.Run()
+		if err != nil {
+			fmt.Println(err)
+		}
 
-		// // TODO: Execute stuff that are generated on init prompts,
+		err = services.ExecAnsibleWithPassword("out/ansible", "setup.yaml", password.Value)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		err = services.ExecAnsible("out/ansible", "deploy.yaml")
+		if err != nil {
+			fmt.Println(err)
+		}
 	},
 }
 

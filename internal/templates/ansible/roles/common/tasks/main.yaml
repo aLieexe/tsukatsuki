@@ -60,3 +60,22 @@
     src: "/home/{{ hostvars['deploy_user'].ansible_user }}/.ssh/id_rsa"
     dest: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
     flat: yes
+
+
+- name: Set permissions on fetched private key
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
+    mode: '0600'
+
+
+- name: Fetch public key to manager
+  ansible.builtin.fetch:
+    src: "/home/{{ hostvars['deploy_user'].ansible_user }}/.ssh/id_rsa.pub"
+    dest: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
+    flat: yes
+
+
+- name: Set permissions on fetched public key
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
+    mode: '0644'

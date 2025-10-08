@@ -38,17 +38,20 @@ func execCmd(cmd *exec.Cmd, errorPatterns ...string) error {
 			return fmt.Errorf("playbook error: tasks failed on some hosts")
 		}
 	}
+
 	return nil
 }
 
 // Should be use as a first attempt / option before trying out the one with password
-func ExecAnsible(playbookPath string) error {
+func ExecAnsible(ansiblePath, playbookName string) error {
 	cmd := exec.Command(
 		"ansible-playbook",
-		playbookPath,
+		playbookName,
 		"-i", "inventory.ini",
 		"-c", "ssh",
 	)
+
+	cmd.Dir = ansiblePath
 
 	err := execCmd(cmd, "no hosts matched")
 	if err != nil {
@@ -58,19 +61,16 @@ func ExecAnsible(playbookPath string) error {
 }
 
 // This should be used as a fallback, in the case that the one with inventory.ini dont work
-func ExecAnsibleWithPassword(playbookPath string, password string) error {
-	if !strings.HasSuffix(playbookPath, ".yml") {
-		return fmt.Errorf("invalid playbook file")
-	}
-
+func ExecAnsibleWithPassword(ansiblePath, playbookName, password string) error {
 	cmd := exec.Command(
 		"ansible-playbook",
-		playbookPath,
+		playbookName,
 		"-i", "inventory.ini",
 		"-c", "ssh",
 		"-e", fmt.Sprintf("ansible_become_pass=%s ansible_password=%s", password, password),
 	)
 
+	cmd.Dir = ansiblePath
 	err := execCmd(cmd, "no hosts matched")
 	if err != nil {
 		return err
