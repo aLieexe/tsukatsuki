@@ -3,12 +3,11 @@ package services
 import (
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
 	"text/template"
 
-	"github.com/aLieexe/tsukatsuki/internal/templates"
+	"github.com/aLieexe/tsukatsuki/internal/assets"
 )
 
 // List out all compose services to add in docker-compose.yaml
@@ -32,6 +31,8 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 	}
 
 	res = append(res, "dockerfile")
+	res = append(res, "rsync-ignore")
+
 	err = app.GenerateConfigurationFiles(res, filepath.Join(app.OutputDir, "conf"))
 	if err != nil {
 		return err
@@ -56,7 +57,7 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	playbookData.Roles = append(playbookData.Roles, "docker")
 	playbookData.Roles = append(playbookData.Roles, serviceList...)
 
-	templateProvider, err := templates.NewTemplateProvider()
+	templateProvider, err := assets.NewTemplateProvider()
 	if err != nil {
 		return err
 	}
@@ -83,17 +84,17 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	}
 
 	// Copy the file that we wont need to template
-	err = copyFile("internal/templates/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
+	err = copyFile("static/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
 	if err != nil {
 		return err
 	}
 
-	err = copyFile("internal/templates/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
+	err = copyFile("static/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
 	if err != nil {
 		return err
 	}
 
-	rolesSrcDir := "internal/templates/ansible/roles"
+	rolesSrcDir := "static/ansible/roles"
 	rolesDstDir := filepath.Join(outDir, "/roles")
 
 	playbookData.Roles = append(playbookData.Roles, "deployment")
@@ -117,7 +118,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 		return err
 	}
 
-	templateProvider, err := templates.NewTemplateProvider()
+	templateProvider, err := assets.NewTemplateProvider()
 	if err != nil {
 		return err
 	}
@@ -138,7 +139,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 		return err
 	}
 
-	templateProvider, err := templates.NewTemplateProvider()
+	templateProvider, err := assets.NewTemplateProvider()
 	if err != nil {
 		return err
 	}
@@ -221,8 +222,7 @@ func createOutputDirectory(dir string) error {
 	return nil
 }
 
-// This is only for standard file, i think ansible files can also be here? Not sure, but most likely yes
-func generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName, outDir string, data any) error {
+func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, outDir string, data any) error {
 	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(string(fileTemplate.Content))
 	if err != nil {
 		return fmt.Errorf("error parsing template %s: %w", templateName, err)
@@ -252,61 +252,11 @@ func generateStandardTemplate(fileTemplate *templates.FileTemplate, templateName
 }
 
 func copyFile(src, dst string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if closeError := srcFile.Close(); closeError != nil {
-			if err == nil {
-				err = closeError
-			}
-		}
-	}()
-
-	if err != nil {
-		return err
-	}
-
-	// Ensure destination directory exists
-	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil {
-		return err
-	}
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		if closeError := dstFile.Close(); closeError != nil {
-			if err == nil {
-				err = closeError
-			}
-		}
-	}()
-
-	_, err = io.Copy(dstFile, srcFile)
+	err := assets.CopyEmbeddedFiles(src, dst)
 	return err
 }
 
-func copyDir(srcDir, dstDir string) error {
-	return filepath.WalkDir(srcDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
-		relativePath, err := filepath.Rel(srcDir, path)
-		if err != nil {
-			return err
-		}
-
-		targetPath := filepath.Join(dstDir, relativePath)
-
-		if d.IsDir() {
-			return os.MkdirAll(targetPath, os.ModePerm)
-		}
-		return copyFile(path, targetPath)
-	})
+func copyDir(src, dst string) error {
+	err := assets.CopyEmbeddedDirectory(src, dst)
+	return err
 }
