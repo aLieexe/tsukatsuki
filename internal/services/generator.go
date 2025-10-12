@@ -17,6 +17,29 @@ type ComposeConfig struct {
 	Services []string
 }
 
+func (app *AppConfig) GenerateDeploymentFiles() error {
+	res := make([]string, 0)
+	res = append(res, app.Webserver)
+
+	err := app.GenerateCompose(res, filepath.Join(app.OutputDir, "conf"))
+	if err != nil {
+		return err
+	}
+
+	err = app.GenerateAnsibleFiles(res, filepath.Join(app.OutputDir, "ansible"))
+	if err != nil {
+		return err
+	}
+
+	res = append(res, "dockerfile")
+	err = app.GenerateConfigurationFiles(res, filepath.Join(app.OutputDir, "conf"))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) error {
 	err := createOutputDirectory(outDir)
 	if err != nil {
@@ -33,7 +56,11 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	playbookData.Roles = append(playbookData.Roles, "docker")
 	playbookData.Roles = append(playbookData.Roles, serviceList...)
 
-	templateProvider := templates.NewTemplateProvider()
+	templateProvider, err := templates.NewTemplateProvider()
+	if err != nil {
+		return err
+	}
+
 	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]
 	if err := generateStandardTemplate(&fileTemplate, "setup-playbook", outDir, playbookData); err != nil {
 		return err
@@ -90,7 +117,10 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 		return err
 	}
 
-	templateProvider := templates.NewTemplateProvider()
+	templateProvider, err := templates.NewTemplateProvider()
+	if err != nil {
+		return err
+	}
 
 	for _, templateName := range templateNeeded {
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
@@ -108,7 +138,10 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 		return err
 	}
 
-	templateProvider := templates.NewTemplateProvider()
+	templateProvider, err := templates.NewTemplateProvider()
+	if err != nil {
+		return err
+	}
 	composeTemplate := templateProvider.GetFileTemplates()["docker-compose"]
 
 	tmpl, err := template.New("docker-compose").Option("missingkey=error").Parse(string(composeTemplate.Content))

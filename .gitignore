@@ -7,3 +7,4 @@ conf/
 .ansible/
 .air.toml
 tsukatsuki.yaml
+deploy/

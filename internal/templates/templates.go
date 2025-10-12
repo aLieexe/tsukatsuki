@@ -1,7 +1,10 @@
 package templates
 
 import (
-	_ "embed"
+	"embed"
+	"fmt"
+	"path/filepath"
+	"strings"
 )
 
 type FileTemplate struct {
@@ -19,85 +22,98 @@ type TemplateProvider struct {
 	composePresetsTemplates map[string]ComposePresetTemplates
 }
 
-//go:embed files/Caddyfile.tmpl
-var caddyfileContents []byte
+//go:embed files/* ansible/* compose_presets/*
+var templatesFS embed.FS
 
-//go:embed files/docker-compose.yaml.tmpl
-var dockerComposeContent []byte
+// volume configurations for compose presets
+var composeVolumeConfig = map[string][]string{
+	"caddy": {"caddy_data", "caddy_config"},
+	"nginx": nil,
+}
 
-//go:embed files/Dockerfile.tmpl
-var dockerfileContent []byte
-
-//go:embed files/nginx.conf.tmpl
-var nginxConfContent []byte
-
-//go:embed ansible/setup.yaml.tmpl
-var ansibleSetupContent []byte
-
-//go:embed ansible/all.yaml.tmpl
-var ansibleVarsContent []byte
-
-//go:embed ansible/inventory.ini.tmpl
-var ansibleInventoryContent []byte
-
-//go:embed compose_presets/caddy.tmpl
-var caddyCompose []byte
-
-// creates a new template provider with all templates
-func NewTemplateProvider() *TemplateProvider {
+func NewTemplateProvider() (*TemplateProvider, error) {
 	provider := &TemplateProvider{
 		fileTemplates:           make(map[string]FileTemplate),
 		composePresetsTemplates: make(map[string]ComposePresetTemplates),
 	}
 
-	// init file templates
-	provider.fileTemplates["caddy"] = FileTemplate{
-		Content:  caddyfileContents,
-		Filename: "Caddyfile",
+	err := provider.loadFileTemplates()
+	if err != nil {
+		return nil, err
+	}
+	err = provider.loadComposePresets()
+	if err != nil {
+		return nil, err
 	}
 
-	provider.fileTemplates["nginx"] = FileTemplate{
-		Content:  nginxConfContent,
-		Filename: "nginx.conf",
+	return provider, nil
+}
+
+func (tp *TemplateProvider) loadFileTemplates() error {
+	// define template mappings
+	templateMappings := map[string]string{
+		"caddy":             "files/Caddyfile.tmpl",
+		"nginx":             "files/nginx.conf.tmpl",
+		"docker-compose":    "files/docker-compose.yaml.tmpl",
+		"dockerfile":        "files/Dockerfile.tmpl",
+		"ansible-setup":     "ansible/setup.yaml.tmpl",
+		"ansible-vars":      "ansible/all.yaml.tmpl",
+		"ansible-inventory": "ansible/inventory.ini.tmpl",
 	}
 
-	provider.fileTemplates["docker-compose"] = FileTemplate{
-		Content:  dockerComposeContent,
-		Filename: "docker-compose.yaml",
+	// filename mappings for output
+	filenameMappings := map[string]string{
+		"caddy":             "Caddyfile",
+		"nginx":             "nginx.conf",
+		"docker-compose":    "docker-compose.yaml",
+		"dockerfile":        "Dockerfile",
+		"ansible-setup":     "setup.yaml",
+		"ansible-vars":      "all.yaml",
+		"ansible-inventory": "inventory.ini",
 	}
 
-	provider.fileTemplates["dockerfile"] = FileTemplate{
-		Content:  dockerfileContent,
-		Filename: "Dockerfile",
+	for key, path := range templateMappings {
+		content, err := templatesFS.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file on %s", path)
+		}
+
+		tp.fileTemplates[key] = FileTemplate{
+			Content:  content,
+			Filename: filenameMappings[key],
+		}
 	}
 
-	provider.fileTemplates["ansible-setup"] = FileTemplate{
-		Content:  ansibleSetupContent,
-		Filename: "setup.yaml",
+	return nil
+}
+
+func (tp *TemplateProvider) loadComposePresets() error {
+	// read all files in compose_presets directory
+	entries, err := templatesFS.ReadDir("compose_presets")
+	if err != nil {
+		return err
 	}
 
-	provider.fileTemplates["ansible-vars"] = FileTemplate{
-		Content:  ansibleVarsContent,
-		Filename: "all.yaml",
+	for _, entry := range entries {
+		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".tmpl") {
+			continue
+		}
+
+		// extract preset name from filename (remove .tmpl extension)
+		presetName := strings.TrimSuffix(entry.Name(), ".tmpl")
+
+		content, err := templatesFS.ReadFile(filepath.Join("compose_presets", entry.Name()))
+		if err != nil {
+			return fmt.Errorf("failed to read compose preset named %s", entry.Name())
+		}
+
+		tp.composePresetsTemplates[presetName] = ComposePresetTemplates{
+			Content: content,
+			Volume:  composeVolumeConfig[presetName],
+		}
 	}
 
-	provider.fileTemplates["ansible-inventory"] = FileTemplate{
-		Content:  ansibleInventoryContent,
-		Filename: "inventory.ini",
-	}
-
-	// init preset templates
-	provider.composePresetsTemplates["caddy"] = ComposePresetTemplates{
-		Content: caddyCompose,
-		Volume:  []string{"caddy_data", "caddy_config"},
-	}
-
-	provider.composePresetsTemplates["nginx"] = ComposePresetTemplates{
-		Content: caddyCompose,
-		Volume:  nil,
-	}
-
-	return provider
+	return err
 }
 
 func (tp *TemplateProvider) GetFileTemplates() map[string]FileTemplate {
