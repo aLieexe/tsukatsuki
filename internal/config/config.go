@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"path/filepath"
 
@@ -17,13 +16,13 @@ type AppConfigYaml struct {
 	} `yaml:"project"`
 
 	Server struct {
-		IP string `yaml:"ip"`
+		IP        string `yaml:"ip"`
+		SetupUser string `yaml:"setup_user"`
 	} `yaml:"server"`
 
 	Webserver struct {
-		Type     string `yaml:"type"`
-		SSLEmail string `yaml:"ssl_email"`
-		Domain   string `yaml:"domain"`
+		Type   string `yaml:"type"`
+		Domain string `yaml:"domain"`
 	} `yaml:"webserver"`
 
 	// Services []struct {
@@ -32,7 +31,8 @@ type AppConfigYaml struct {
 	Path struct {
 		LocalPath  string `yaml:"local_path"`
 		RemotePath string `yaml:"remote_path"`
-	}
+		OutputDir  string `yaml:"output_dir"`
+	} `yaml:"path"`
 
 	GithubActions struct {
 		Mode   string `yaml:"mode"`
@@ -43,13 +43,12 @@ type AppConfigYaml struct {
 func CreateConfigFiles(cfg AppConfigYaml) error {
 	file, err := os.ReadFile("tsukatsuki.yaml")
 	if err != nil {
-		log.Println("tsukatsuki.yaml file doesnt exist in the current project, re-creating one", err)
+		fmt.Println("tsukatsuki.yaml file doesnt exist in the current project, re-creating one")
 	}
 
 	var yamlResult AppConfigYaml
 	commentMap := yaml.CommentMap{}
 	err = yaml.UnmarshalWithOptions(file, &yamlResult, yaml.Strict(), yaml.CommentToMap(commentMap))
-
 	if err != nil {
 		return fmt.Errorf("unmarshaling YAML: %w", err)
 	}
@@ -60,7 +59,7 @@ func CreateConfigFiles(cfg AppConfigYaml) error {
 		yaml.WithComment(commentMap),
 	)
 
-	err = os.WriteFile("tsukatsuki.yaml", modifiedData, 0644)
+	err = os.WriteFile("tsukatsuki.yaml", modifiedData, 0o644)
 	if err != nil {
 		return fmt.Errorf("writing file: %w", err)
 	}
@@ -73,7 +72,6 @@ func GetConfigFromFiles() (AppConfigYaml, error) {
 
 	var yamlResult AppConfigYaml
 	err := yaml.UnmarshalWithOptions(file, &yamlResult, yaml.Strict())
-
 	if err != nil {
 		return AppConfigYaml{}, fmt.Errorf("unmarshaling YAML: %w", err)
 	}

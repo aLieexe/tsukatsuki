@@ -6,10 +6,14 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
 
 	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/aLieexe/tsukatsuki/internal/services"
-	"github.com/spf13/cobra"
+	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
 )
 
 // deployCmd represents the deploy command
@@ -30,42 +34,31 @@ var deployCmd = &cobra.Command{
 
 		cfg := services.NewAppConfigFromYaml(yamlConfig)
 
-		res := make([]string, 0)
-		res = append(res, cfg.Webserver)
+		fmt.Println("Running server setup with inventory.ini")
 
-		err = cfg.GenerateCompose(res, "out/conf")
+		err = services.ExecAnsible(filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml")
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		err = cfg.GenerateAnsibleFiles(res, "out/ansible")
+		fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
+		var password textinput.Output
+
+		teaProgram := tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "12345678", cfg))
+		_, err = teaProgram.Run()
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		res = append(res, "dockerfile")
-		cfg.GenerateConfigurationFiles(res, "out/conf")
+		err = services.ExecAnsibleWithPassword(filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml", password.Value)
+		if err != nil {
+			fmt.Println(err)
+		}
 
-		// fmt.Println("In order to continue you must provide us with a user with an admin priviliges")
-		// // TODO: Guide, make sure it can ssh aswell
-
-		// // ask root password, or we cooked
-		// var password textinput.Output
-		// var username textinput.Output
-
-		// teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(&username, "Username to use", "user1", cfg, nil))
-		// _, err := teaProgram.Run()
-		// if err != nil {
-		// 	fmt.Println(err)
-		// }
-
-		// teaProgram = tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "0812083", cfg))
-		// _, err = teaProgram.Run()
-		// if err != nil {
-		// 	fmt.Println(err)
-		// }
-
-		// // TODO: Execute stuff that are generated on init prompts,
+		err = services.ExecAnsible(filepath.Join(cfg.OutputDir, "ansible"), "deploy.yaml")
+		if err != nil {
+			fmt.Println(err)
+		}
 	},
 }
 

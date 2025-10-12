@@ -1,0 +1,64 @@
+# A lot is stolen from https://gist.github.com/maratori/47a4d00457a92aa426dbd48a18776322 (By a lot i mean all of them is stolen from it tehe)
+
+version: "2"
+
+issues:
+  # Maximum count of issues with the same text.
+  # Set to 0 to disable.
+  # Default: 3
+  max-same-issues: 50
+
+output:
+  formats:
+    text:
+      print-linter-name: true
+
+formatters:
+  enable:
+  - goimports # checks if the code and import statements are formatted according to the 'goimports' command
+
+  settings:
+    goimports:
+      local-prefixes:
+      - github.com/aLieexe/tsukatsuki
+
+linters:
+  enable:
+  - govet # reports suspicious constructs, usually stuff like Printf formatting tomfoolery
+  - errcheck # Forces to not skip error check.
+  - staticcheck # applying a ton of static analysis checks
+  - unused # checks for unused constants, variables, functions and types
+  - bodyclose # checks whether HTTP response body is closed successfully
+  - errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13, Suggests to use `%w` for error-wrapping.
+  - ineffassign # detects when assignments to existing variables are not used
+  - copyloopvar # detects places where loop variables are copied (Go 1.22+)
+  - rowserrcheck # checks whether Err of rows is checked successfully
+  - cyclop # checks function and package cyclomatic complexity
+  # Very niche, so nuh
+  # - asasalint # checks for pass []any as any in variadic func(...any)
+  # - asciicheck # checks that your code does not contain non-ASCII identifiers
+  settings:
+    cyclop:
+      # The maximal code complexity to report.
+      # Default: 10
+      max-complexity: 20
+
+    errcheck:
+      # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
+      # Such cases aren't reported by default.
+      # Default: false
+      check-type-assertions: true
+
+    exhaustive:
+      # Program elements to check for exhaustiveness.
+      # Default: [ switch ]
+      check:
+      - switch
+      - map
+
+    rowserrcheck:
+      # database/sql is always checked.
+      # Default: []
+      packages:
+      - github.com/jmoiron/sqlx
+      - github.com/jackc/pgx/v5

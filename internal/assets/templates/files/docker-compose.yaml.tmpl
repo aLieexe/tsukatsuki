@@ -2,7 +2,8 @@ services:
 {{range .Service}}  {{.}}{{end}}
   app:
     build:
-      context: .
+      context: ../../
+      dockerfile: deploy/conf/Dockerfile
     healthcheck:
       test: ["CMD", "wget", "--spider", "-q", "http://localhost:5500/"]
       interval: 10s

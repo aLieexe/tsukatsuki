@@ -1,0 +1,6 @@
+- hosts: setup
+  become: true
+  become_method: sudo
+  roles:
+  {{range .Roles}}  - {{.}}
+  {{end}}
