@@ -51,7 +51,7 @@ func NewTemplateProvider() (*TemplateProvider, error) {
 
 func (tp *TemplateProvider) loadFileTemplates() error {
 	// define template mappings
-	templateMappings := map[string]string{
+	fileTemplateMappings := map[string]string{
 		"caddy":             "files/Caddyfile.tmpl",
 		"nginx":             "files/nginx.conf.tmpl",
 		"docker-compose":    "files/docker-compose.yaml.tmpl",
@@ -62,7 +62,7 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 	}
 
 	// filename mappings for output
-	filenameMappings := map[string]string{
+	fileNameMappings := map[string]string{
 		"caddy":             "Caddyfile",
 		"nginx":             "nginx.conf",
 		"docker-compose":    "docker-compose.yaml",
@@ -72,7 +72,7 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 		"ansible-inventory": "inventory.ini",
 	}
 
-	for key, path := range templateMappings {
+	for key, path := range fileTemplateMappings {
 		content, err := templatesFS.ReadFile(path)
 		if err != nil {
 			return fmt.Errorf("failed to read file on %s", path)
@@ -80,7 +80,7 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 
 		tp.fileTemplates[key] = FileTemplate{
 			Content:  content,
-			Filename: filenameMappings[key],
+			Filename: fileNameMappings[key],
 		}
 	}
 
