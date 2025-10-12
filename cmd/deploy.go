@@ -6,6 +6,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -35,7 +36,7 @@ var deployCmd = &cobra.Command{
 
 		fmt.Println("Running server setup with inventory.ini")
 
-		err = services.ExecAnsible("out/ansible", "setup.yaml")
+		err = services.ExecAnsible(filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml")
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -49,12 +50,12 @@ var deployCmd = &cobra.Command{
 			fmt.Println(err)
 		}
 
-		err = services.ExecAnsibleWithPassword("out/ansible", "setup.yaml", password.Value)
+		err = services.ExecAnsibleWithPassword(filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml", password.Value)
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		err = services.ExecAnsible("out/ansible", "deploy.yaml")
+		err = services.ExecAnsible(filepath.Join(cfg.OutputDir, "ansible"), "deploy.yaml")
 		if err != nil {
 			fmt.Println(err)
 		}

@@ -45,3 +45,11 @@ run:
 %:
 	@:
 
+
+# For testing
+.PHONY: install
+## install: build the app
+install:
+	go build -ldflags='-s' -o=./bin/tsukatsuki .
+	sudo mv ./bin/tsukatsuki /usr/local/bin/tsukatsuki
+

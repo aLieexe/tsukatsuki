@@ -28,16 +28,9 @@ type AppConfig struct {
 
 	LocalPath  string
 	RemotePath string
+	OutputDir  string
 
 	Exit bool
-}
-
-func setValue[T comparable](value, defaultValue T) T {
-	var zero T
-	if value != zero {
-		return value
-	}
-	return defaultValue
 }
 
 func NewAppConfig() *AppConfig {
@@ -57,32 +50,35 @@ func NewAppConfig() *AppConfig {
 		GithubActions: "none",
 
 		LocalPath: utils.GetAbsolutePath(),
+		OutputDir: "deploy",
 
 		Exit: false,
 	}
 
 	cfg.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.ProjectName)
+
 	return cfg
 }
 
 func (app *AppConfig) CreateConfigurationFile() error {
 	var cfg config.AppConfigYaml
 
-	cfg.Project.Name = setValue(app.ProjectName, utils.GetProjectDirectory())
-	cfg.Project.Port = setValue(app.AppPort, 6969)
-	cfg.Project.Runtime = setValue(app.Runtime, "go")
+	cfg.Project.Name = app.ProjectName
+	cfg.Project.Port = app.AppPort
+	cfg.Project.Runtime = app.Runtime
 
-	cfg.Server.IP = setValue(app.ServerIP, "127.0.0.1")
-	cfg.Server.SetupUser = setValue(app.SetupUser, "user1")
+	cfg.Server.IP = app.ServerIP
+	cfg.Server.SetupUser = app.SetupUser
 
-	cfg.Webserver.Domain = setValue(app.AppSiteAddress, "placeholder.com")
-	cfg.Webserver.Type = setValue(app.Webserver, "caddy")
+	cfg.Webserver.Domain = app.AppSiteAddress
+	cfg.Webserver.Type = app.Webserver
 
-	cfg.GithubActions.Mode = setValue(app.GithubActions, "none")
-	cfg.GithubActions.Branch = setValue(app.Branch, "main")
+	cfg.GithubActions.Mode = app.GithubActions
+	cfg.GithubActions.Branch = app.Branch
 
-	cfg.Path.LocalPath = utils.GetAbsolutePath()
-	cfg.Path.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.Project.Name)
+	cfg.Path.LocalPath = app.LocalPath
+	cfg.Path.RemotePath = app.ProjectName
+	cfg.Path.OutputDir = app.OutputDir
 
 	return config.CreateConfigFiles(cfg)
 }
@@ -102,6 +98,7 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 
 		LocalPath:  yamlConfig.Path.LocalPath,
 		RemotePath: yamlConfig.Path.RemotePath,
+		OutputDir:  yamlConfig.Path.OutputDir,
 
 		Branch:        yamlConfig.GithubActions.Branch,
 		GithubActions: yamlConfig.GithubActions.Mode,

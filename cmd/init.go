@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -167,18 +168,18 @@ var initCmd = &cobra.Command{
 		res := make([]string, 0)
 		res = append(res, cfg.Webserver)
 
-		err = cfg.GenerateCompose(res, "out/conf")
+		err = cfg.GenerateCompose(res, filepath.Join(cfg.OutputDir, "conf"))
 		if err != nil {
 			fmt.Println(err)
 		}
 
-		err = cfg.GenerateAnsibleFiles(res, "out/ansible")
+		err = cfg.GenerateAnsibleFiles(res, filepath.Join(cfg.OutputDir, "ansible"))
 		if err != nil {
 			fmt.Println(err)
 		}
 
 		res = append(res, "dockerfile")
-		err = cfg.GenerateConfigurationFiles(res, "out/conf")
+		err = cfg.GenerateConfigurationFiles(res, filepath.Join(cfg.OutputDir, "conf"))
 		if err != nil {
 			fmt.Println(err)
 		}
