@@ -35,7 +35,7 @@ func execCmd(cmd *exec.Cmd, errorPatterns ...string) error {
 	if strings.Contains(stdout, "PLAY RECAP") {
 		recapSection := strings.Split(stdout, "PLAY RECAP")[1]
 		if strings.Contains(recapSection, "failed=") && !strings.Contains(recapSection, "failed=0") {
-			return fmt.Errorf("playbook error: tasks failed on some hosts")
+			return fmt.Errorf("playbook error: tasks failed")
 		}
 	}
 
@@ -55,7 +55,7 @@ func ExecAnsible(ansiblePath, playbookName string) error {
 
 	err := execCmd(cmd, "no hosts matched")
 	if err != nil {
-		return err
+		return fmt.Errorf("executing with inventory file: %w", err)
 	}
 	return nil
 }
@@ -73,7 +73,7 @@ func ExecAnsibleWithPassword(ansiblePath, playbookName, password string) error {
 	cmd.Dir = ansiblePath
 	err := execCmd(cmd, "no hosts matched")
 	if err != nil {
-		return err
+		return fmt.Errorf("executing with password: %w", err)
 	}
 	return nil
 }

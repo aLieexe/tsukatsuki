@@ -42,7 +42,7 @@ var initCmd = &cobra.Command{
 	Long:  `Create a configuration file named tsukatsuki.yaml, that later can be used to deploy using tsukatsuki deploy`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if config.ConfigFileExist() {
-			// TODO: should ask if they want to reinitialize, remind the fact that config file already existed, if want to then continue, else quit
+			fmt.Println("Continuing will create a new tsukatsuki.yaml. You can quit by using `Ctrl + C`")
 		}
 
 		cfg := services.NewAppConfig()

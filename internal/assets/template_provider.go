@@ -34,6 +34,11 @@ var composeVolumeConfig = map[string][]string{
 	"nginx": nil,
 }
 
+const (
+	templateDirectory = "templates"
+	composeDirectory  = "compose"
+)
+
 func NewTemplateProvider() (*TemplateProvider, error) {
 	provider := &TemplateProvider{
 		fileTemplates:           make(map[string]FileTemplate),
@@ -78,9 +83,9 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 		"ansible-inventory": "inventory.ini",
 	}
 
-	subFS, err := fs.Sub(templatesFS, "templates")
+	subFS, err := fs.Sub(templatesFS, templateDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating sub filesystem for '%s': %w", templateDirectory, err)
 	}
 
 	for key, path := range fileTemplateMappings {
@@ -99,14 +104,14 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 }
 
 func (tp *TemplateProvider) loadComposePresets() error {
-	subFS, err := fs.Sub(templatesFS, "templates")
+	subFS, err := fs.Sub(templatesFS, templateDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating sub filesystem for '%s': %w", templateDirectory, err)
 	}
 
-	entries, err := fs.ReadDir(subFS, "compose")
+	entries, err := fs.ReadDir(subFS, composeDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading compose directory '%s': %w", composeDirectory, err)
 	}
 
 	for _, entry := range entries {
@@ -117,9 +122,9 @@ func (tp *TemplateProvider) loadComposePresets() error {
 		// extract preset name from filename (remove .tmpl extension)
 		presetName := strings.TrimSuffix(entry.Name(), ".tmpl")
 
-		content, err := fs.ReadFile(subFS, filepath.Join("compose", entry.Name()))
+		content, err := fs.ReadFile(subFS, filepath.Join(composeDirectory, entry.Name()))
 		if err != nil {
-			return fmt.Errorf("failed to read compose preset named %s", entry.Name())
+			return fmt.Errorf("reading compose preset named '%s': %w", entry.Name(), err)
 		}
 
 		tp.composePresetsTemplates[presetName] = ComposePresetTemplates{

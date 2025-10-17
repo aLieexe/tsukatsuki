@@ -17,25 +17,27 @@ type ComposeConfig struct {
 }
 
 func (app *AppConfig) GenerateDeploymentFiles() error {
-	res := make([]string, 0)
-	res = append(res, app.Webserver)
-
-	err := app.GenerateCompose(res, filepath.Join(app.OutputDir, "conf"))
-	if err != nil {
-		return err
+	operations := []struct {
+		name string
+		fn   func() error
+	}{
+		// This should be fine for now, can add the service later
+		{"compose generation", func() error {
+			return app.GenerateCompose([]string{app.Webserver}, filepath.Join(app.OutputDir, "conf"))
+		}},
+		{"ansible files generation", func() error {
+			return app.GenerateAnsibleFiles([]string{app.Webserver}, filepath.Join(app.OutputDir, "ansible"))
+		}},
+		{"configuration files generation", func() error {
+			// We also need to get the Dockerfile and the rsyncignore files,
+			return app.GenerateConfigurationFiles([]string{app.Webserver, "dockerfile", "rsync-ignore"}, filepath.Join(app.OutputDir, "conf"))
+		}},
 	}
 
-	err = app.GenerateAnsibleFiles(res, filepath.Join(app.OutputDir, "ansible"))
-	if err != nil {
-		return err
-	}
-
-	res = append(res, "dockerfile")
-	res = append(res, "rsync-ignore")
-
-	err = app.GenerateConfigurationFiles(res, filepath.Join(app.OutputDir, "conf"))
-	if err != nil {
-		return err
+	for _, op := range operations {
+		if err := op.fn(); err != nil {
+			return fmt.Errorf("%s failed: %w", op.name, err)
+		}
 	}
 
 	return nil
@@ -134,6 +136,9 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 
 // TODO: ADD MORE PRESETS, TEST IT
 func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) error {
+	// Mapping name of docker-compose.yml in template_provider.go
+	const composeTemplateName = "docker-compose"
+
 	err := createOutputDirectory(outDir)
 	if err != nil {
 		return err
@@ -143,9 +148,9 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	if err != nil {
 		return err
 	}
-	composeTemplate := templateProvider.GetFileTemplates()["docker-compose"]
+	composeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
 
-	tmpl, err := template.New("docker-compose").Option("missingkey=error").Parse(string(composeTemplate.Content))
+	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(composeTemplate.Content))
 	if err != nil {
 		return fmt.Errorf("error parsing template %s: %w", composeTemplate.Filename, err)
 	}
@@ -165,7 +170,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 		}
 	}()
 
-	// temp to combine all the presets,
+	// Combine all the needed data, that is the services and the volumes needed for said service to function
 	templateData := struct {
 		Service []string
 		Volumes []string
@@ -177,11 +182,10 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	presetProvider := templateProvider.GetComposePresetTemplates()
 	for _, presetName := range presetNeeded {
 		if preset, exists := presetProvider[presetName]; exists {
-			// add the services
+			// All the service and volumes listed previously
 			serviceDefinition := string(preset.Content)
 			templateData.Service = append(templateData.Service, serviceDefinition)
 
-			// add volumes from preset
 			if preset.Volume != nil {
 				templateData.Volumes = append(templateData.Volumes, preset.Volume...)
 			}
@@ -190,7 +194,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 
 	err = tmpl.Execute(file, templateData)
 	if err != nil {
-		return fmt.Errorf("error executing template: %w", err)
+		return fmt.Errorf("error executing template %s: %w", composeTemplateName, err)
 	}
 
 	return nil
@@ -208,15 +212,19 @@ func createOutputDirectory(dir string) error {
 			if writeErr != nil {
 				return fmt.Errorf("no write permission in %q: %w", dir, writeErr)
 			}
-			err := f.Close()
-			if err != nil {
-				return err
+
+			if closeErr := f.Close(); closeErr != nil {
+				return fmt.Errorf("closing test file %s: %w", f.Name(), closeErr)
 			}
-			err = os.Remove(testFile) // clean up
-			return err
+
+			// Clean up test
+			if removeErr := os.Remove(testFile); removeErr != nil {
+				return fmt.Errorf("removing test file %s: %w", f.Name(), removeErr)
+			}
+			return nil
 		}
 		// i think parent dir permission also go here? not sure
-		return err
+		return fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
 	return nil
