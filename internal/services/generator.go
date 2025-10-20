@@ -30,7 +30,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		}},
 		{"configuration files generation", func() error {
 			// We also need to get the Dockerfile and the rsyncignore files,
-			return app.GenerateConfigurationFiles([]string{app.Webserver, "dockerfil", "rsync-ignore"}, filepath.Join(app.OutputDir, "conf"))
+			return app.GenerateConfigurationFiles([]string{app.Webserver, "dockerfile", "rsync-ignore"}, filepath.Join(app.OutputDir, "conf"))
 		}},
 	}
 
