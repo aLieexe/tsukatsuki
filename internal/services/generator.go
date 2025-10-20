@@ -30,7 +30,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		}},
 		{"configuration files generation", func() error {
 			// We also need to get the Dockerfile and the rsyncignore files,
-			return app.GenerateConfigurationFiles([]string{app.Webserver, "dockerfile", "rsync-ignore"}, filepath.Join(app.OutputDir, "conf"))
+			return app.GenerateConfigurationFiles([]string{app.Webserver, "dockerfil", "rsync-ignore"}, filepath.Join(app.OutputDir, "conf"))
 		}},
 	}
 
@@ -152,14 +152,14 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 
 	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(composeTemplate.Content))
 	if err != nil {
-		return fmt.Errorf("error parsing template %s: %w", composeTemplate.Filename, err)
+		return fmt.Errorf("parsing template %s: %w", composeTemplate.Filename, err)
 	}
 
 	// create output file
 	filePath := filepath.Join(outDir, composeTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("error creating file %s: %w", filePath, err)
+		return fmt.Errorf("creating file %s: %w", filePath, err)
 	}
 
 	defer func() {
@@ -194,7 +194,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 
 	err = tmpl.Execute(file, templateData)
 	if err != nil {
-		return fmt.Errorf("error executing template %s: %w", composeTemplateName, err)
+		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 
 	return nil
@@ -231,16 +231,21 @@ func createOutputDirectory(dir string) error {
 }
 
 func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, outDir string, data any) error {
-	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(string(fileTemplate.Content))
+	content := string(fileTemplate.Content)
+	if content == "" {
+		return fmt.Errorf("template content is empty for %s", templateName)
+	}
+
+	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(content)
 	if err != nil {
-		return fmt.Errorf("error parsing template %s: %w", templateName, err)
+		return fmt.Errorf("parsing template '%s': %w", templateName, err)
 	}
 
 	// create output file
 	filePath := filepath.Join(outDir, fileTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("error creating file %s: %w", filePath, err)
+		return fmt.Errorf("creating file %s: %w", filePath, err)
 	}
 
 	defer func() {
@@ -253,7 +258,7 @@ func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, o
 
 	// execute template with the data needed
 	if err := tmpl.Execute(file, data); err != nil {
-		return fmt.Errorf("error executing template %s: %w", templateName, err)
+		return fmt.Errorf("executing template %s: %w", templateName, err)
 	}
 
 	return nil
