@@ -152,14 +152,9 @@ func runInitCommand() {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
+
 	cfg.GithubActions = userInput.GithubActions.Value
 	cfg.ExitCLI(teaProgram)
-
-	err = cfg.CreateConfigurationFile()
-	if err != nil {
-		log.Error(fmt.Sprintf("Failed creating configuration file: %s", err))
-	}
-
 	if cfg.GithubActions != "none" {
 		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.Branch, "What branch do you want to use to trigger Github Actions", "main", cfg, nil))
 		if _, err := teaProgram.Run(); err != nil {
@@ -169,6 +164,11 @@ func runInitCommand() {
 
 		cfg.Branch = userInput.Branch.Value
 		cfg.ExitCLI(teaProgram)
+	}
+
+	err = cfg.SaveConfigToFile()
+	if err != nil {
+		log.Error(fmt.Sprintf("Failed creating configuration file: %s", err))
 	}
 
 	err = cfg.GenerateDeploymentFiles()

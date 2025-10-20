@@ -40,38 +40,55 @@ type AppConfigYaml struct {
 	} `yaml:"github_actions"`
 }
 
-func CreateConfigFiles(cfg AppConfigYaml) error {
-	file, err := os.ReadFile("tsukatsuki.yaml")
+func UpdateConfigFile(cfg AppConfigYaml) error {
+	const configFileName = "tsukatsuki.yaml"
+
+	file, err := os.ReadFile(configFileName)
 	if err != nil {
-		fmt.Println("tsukatsuki.yaml file doesnt exist in the current project, re-creating one")
+		if os.IsNotExist(err) {
+			return writeConfigFile(configFileName, cfg, yaml.CommentMap{})
+		}
+		return fmt.Errorf("reading config file: %w", err)
 	}
 
-	var yamlResult AppConfigYaml
+	// file exists, parse to extract comments
 	commentMap := yaml.CommentMap{}
-	err = yaml.UnmarshalWithOptions(file, &yamlResult, yaml.Strict(), yaml.CommentToMap(commentMap))
+	err = yaml.UnmarshalWithOptions(file, &AppConfigYaml{}, yaml.Strict(), yaml.CommentToMap(commentMap))
 	if err != nil {
-		return fmt.Errorf("unmarshaling YAML: %w", err)
+		// if parsing fails, create new file without comments
+		fmt.Printf("failed to parse existing config, creating new one: %v\n", err)
+		return writeConfigFile(configFileName, cfg, yaml.CommentMap{})
 	}
 
-	// write data with the comment aswell
-	modifiedData, _ := yaml.MarshalWithOptions(
+	// write config with preserved comments
+	return writeConfigFile(configFileName, cfg, commentMap)
+}
+
+func writeConfigFile(fileName string, cfg AppConfigYaml, commentMap yaml.CommentMap) error {
+	modifiedData, err := yaml.MarshalWithOptions(
 		cfg,
 		yaml.WithComment(commentMap),
 	)
-
-	err = os.WriteFile("tsukatsuki.yaml", modifiedData, 0o644)
 	if err != nil {
-		return fmt.Errorf("writing file: %w", err)
+		return fmt.Errorf("marshaling config: %w", err)
+	}
+
+	err = os.WriteFile(fileName, modifiedData, 0o644)
+	if err != nil {
+		return fmt.Errorf("writing config file: %w", err)
 	}
 
 	return nil
 }
 
 func GetConfigFromFiles() (AppConfigYaml, error) {
-	file, _ := os.ReadFile("tsukatsuki.yaml")
+	file, err := os.ReadFile("tsukatsuki.yaml")
+	if err != nil {
+		return AppConfigYaml{}, fmt.Errorf("reading config file: %w", err)
+	}
 
 	var yamlResult AppConfigYaml
-	err := yaml.UnmarshalWithOptions(file, &yamlResult, yaml.Strict())
+	err = yaml.UnmarshalWithOptions(file, &yamlResult, yaml.Strict())
 	if err != nil {
 		return AppConfigYaml{}, fmt.Errorf("unmarshaling YAML: %w", err)
 	}
