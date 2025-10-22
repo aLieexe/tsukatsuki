@@ -54,7 +54,13 @@ func runInitCommand(cmd *cobra.Command) {
 
 	cfg := services.NewAppConfig()
 
-	// early init part
+	outputDir, err := cmd.Flags().GetString("output")
+	if err != nil {
+		log.Error(fmt.Sprintf("Failed to read flags: %s", err))
+	}
+
+	cfg.OutputDir = outputDir
+
 	userInput := &UserInput{
 		AppName:        &textinput.Output{},
 		AppPort:        &textinput.Output{},
@@ -178,5 +184,6 @@ func runInitCommand(cmd *cobra.Command) {
 }
 
 func init() {
+	initCmd.Flags().String("output", "deploy", "folder where the configuration will be generated")
 	rootCmd.AddCommand(initCmd)
 }

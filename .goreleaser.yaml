@@ -1,0 +1,48 @@
+version: 2
+
+before:
+  hooks:
+  # You may remove this if you don't use go modules.
+  - go mod tidy
+
+builds:
+- binary: test
+  main: ./cmd/api/main.go
+  env:
+  - CGO_ENABLED=0
+  goos:
+  - linux
+  - windows
+  - darwin
+  goarch:
+  - amd64
+  - arm64
+
+archives:
+- formats: [ tar.gz ]
+  name_template: >-
+    {{- .ProjectName }}_ {{- .Version }}_ {{- title .Os }}_ {{- if eq .Arch "amd64" }}x86_64 {{- else if eq .Arch "386" }}i386 {{- else }}{{ .Arch }}{{ end }} {{- if .Arm }}v{{ .Arm }}{{ end -}}
+
+  # use zip for windows archives
+  format_overrides:
+  - goos: windows
+    formats: [ zip ]
+  builds_info:
+    group: root
+    owner: root
+  files:
+  - README.md
+
+changelog:
+  sort: asc
+  filters:
+    include:
+    - '^feat:'
+    - '^fix:'
+    - '^chore:'
+    - '^refactor:'
+    - '^perf:'
+    - '^build:'
+
+checksum:
+  name_template: "checksums.txt"

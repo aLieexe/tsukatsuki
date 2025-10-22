@@ -6,16 +6,6 @@ help:
 	@echo 'Usage:'
 	@sed -n 's/^##//p' ${MAKEFILE_LIST} | column -t -s ':' | sed -e 's/^/ /'
 
-.PHONY: dev
-## dev: start go-air, enable hot reload
-dev:
-	watchexec -r -e go --clear --wrap-process session -- "go run main.go"
-
-.PHONY: dev/init
-dev/init:
-	watchexec -r -e go --clear --wrap-process session -- "go run main.go init"
-
-
 ## tidy: format all .go files and tidy module dependencies
 .PHONY: tidy
 tidy:
