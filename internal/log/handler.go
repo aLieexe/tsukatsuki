@@ -5,10 +5,12 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"strings"
 	"sync"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/spf13/cobra"
 
 	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
@@ -95,6 +97,19 @@ func (h *Handler) WithGroup(name string) slog.Handler {
 		newHandler.group = name
 	}
 	return &newHandler
+}
+
+func InitLogger(cmd *cobra.Command) *slog.Logger {
+	verboseEnabled, _ := cmd.Flags().GetBool("verbose")
+
+	var logLevel slog.Level
+	if verboseEnabled {
+		logLevel = slog.LevelDebug
+	} else {
+		logLevel = slog.LevelInfo
+	}
+
+	return Init(os.Stdout, logLevel)
 }
 
 func Init(w io.Writer, level slog.Level) *slog.Logger {

@@ -40,17 +40,18 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Create a configuration file",
 	Long:  `Create a configuration file named tsukatsuki.yaml, that later can be used to deploy using tsukatsuki deploy`,
-	PreRun: func(cmd *cobra.Command, args []string) {
-		if config.ConfigFileExist() {
-			fmt.Println("Continuing will create a new tsukatsuki.yaml. You can quit by using `Ctrl + C`")
-		}
-	},
 	Run: func(cmd *cobra.Command, args []string) {
-		runInitCommand()
+		runInitCommand(cmd)
 	},
 }
 
-func runInitCommand() {
+func runInitCommand(cmd *cobra.Command) {
+	log := log.InitLogger(cmd)
+
+	if config.ConfigFileExist() {
+		log.Warn("Continuing will create a new tsukatsuki.yaml. You can quit by using `Ctrl + C`")
+	}
+
 	cfg := services.NewAppConfig()
 
 	// early init part
@@ -68,7 +69,6 @@ func runInitCommand() {
 	}
 
 	selectionSchema := prompts.InitializeSelectionsSchema()
-	log := log.Init(os.Stdout, 0)
 
 	// AppName Question
 	teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), cfg, nil))

@@ -5,7 +5,6 @@ package cmd
 
 import (
 	"fmt"
-	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -24,7 +23,7 @@ var deployCmd = &cobra.Command{
 	Short: "Create a deployment based on configuration file",
 	Long:  `Deploy the application based on the configuration detailed on tsukatsuki.yaml generated via tsukatsuki init`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log := log.Init(os.Stdout, slog.LevelDebug)
+		log := log.InitLogger(cmd)
 
 		if !config.ConfigFileExist() {
 			log.Warn("please generate a config file with tsukatsuki init before deploying")
