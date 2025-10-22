@@ -5,6 +5,7 @@ package cmd
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -23,7 +24,7 @@ var deployCmd = &cobra.Command{
 	Short: "Create a deployment based on configuration file",
 	Long:  `Deploy the application based on the configuration detailed on tsukatsuki.yaml generated via tsukatsuki init`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log := log.Init(os.Stdout, 0)
+		log := log.Init(os.Stdout, slog.LevelDebug)
 
 		if !config.ConfigFileExist() {
 			log.Warn("please generate a config file with tsukatsuki init before deploying")
@@ -42,9 +43,9 @@ var deployCmd = &cobra.Command{
 
 		log.Info("Attempting to run ansible server setup with inventory.ini")
 
-		err = services.ExecAnsible(filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml")
+		err = services.ExecAnsible(log, filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml")
 		if err != nil {
-			log.Warn("Failed executing using inventory.ini")
+			log.Warn(fmt.Sprintf("Failed executing using inventory.ini: %s", err))
 		}
 
 		log.Info("In order to continue you must provide us with a user with an admin priviliges")
@@ -57,7 +58,7 @@ var deployCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		err = services.ExecAnsibleWithPassword(filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml", password.Value)
+		err = services.ExecAnsibleWithPassword(log, filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml", password.Value)
 		if err != nil {
 			log.Error(fmt.Sprintf("failed to execute: %s", err))
 			os.Exit(1)
@@ -65,7 +66,7 @@ var deployCmd = &cobra.Command{
 
 		log.Info("Deploying application")
 
-		err = services.ExecAnsible(filepath.Join(cfg.OutputDir, "ansible"), "deploy.yaml")
+		err = services.ExecAnsible(log, filepath.Join(cfg.OutputDir, "ansible"), "deploy.yaml")
 		if err != nil {
 			log.Error(fmt.Sprintf("failed to execute: %s", err))
 			os.Exit(1)

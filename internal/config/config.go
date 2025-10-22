@@ -56,7 +56,6 @@ func UpdateConfigFile(cfg AppConfigYaml) error {
 	err = yaml.UnmarshalWithOptions(file, &AppConfigYaml{}, yaml.Strict(), yaml.CommentToMap(commentMap))
 	if err != nil {
 		// if parsing fails, create new file without comments
-		fmt.Printf("failed to parse existing config, creating new one: %v\n", err)
 		return writeConfigFile(configFileName, cfg, yaml.CommentMap{})
 	}
 

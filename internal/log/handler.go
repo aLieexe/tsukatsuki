@@ -8,8 +8,9 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/aLieexe/tsukatsuki/internal/ui"
 	"github.com/charmbracelet/lipgloss"
+
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 var LevelStyleMap = map[slog.Level]lipgloss.Style{
@@ -54,8 +55,6 @@ func (h *Handler) Handle(_ context.Context, r slog.Record) error {
 		style = lipgloss.NewStyle()
 	}
 
-	msg := r.Message
-
 	var attrs strings.Builder
 
 	// add handler's own attributes first
@@ -77,7 +76,7 @@ func (h *Handler) Handle(_ context.Context, r slog.Record) error {
 		return true
 	})
 
-	output := strings.TrimRight(style.Render(msg+attrs.String()), " \t\r\n")
+	output := strings.TrimRight(style.Render(r.Message+attrs.String()), " \t\r\n")
 	_, err := h.w.Write([]byte(output + "\n"))
 	return err
 }
