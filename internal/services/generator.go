@@ -29,8 +29,11 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 			return app.GenerateAnsibleFiles([]string{app.Webserver})
 		}},
 		{"configuration files generation", func() error {
-			// We also need to get the Dockerfile and the rsyncignore files,
-			return app.GenerateConfigurationFiles([]string{app.Webserver, "go-dockerfile", "rsync-ignore"})
+			return app.GenerateConfigurationFiles([]string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"})
+		}},
+
+		{"github actions files generation", func() error {
+			return app.GenerateActionsFiles()
 		}},
 	}
 
@@ -38,6 +41,26 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		if err := op.fn(); err != nil {
 			return fmt.Errorf("%s failed: %w", op.name, err)
 		}
+	}
+
+	return nil
+}
+
+// TODO: Refactor it to be able to do array, Planning on changing the github stuff into multi choice instead
+func (app *AppConfig) GenerateActionsFiles() error {
+	if app.GithubActions == "none" {
+		return nil
+	}
+
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
+	if err != nil {
+		return err
+	}
+
+	fileTemplate := templateProvider.GetFileTemplates()[fmt.Sprintf("%s-%s", app.Runtime, app.GithubActions)]
+
+	if err := generateStandardTemplate(&fileTemplate, fmt.Sprintf("%s-%s", app.Runtime, app.GithubActions), app); err != nil {
+		return err
 	}
 
 	return nil
@@ -61,12 +84,12 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 
 	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]
 
-	if err := generateStandardTemplate(&fileTemplate, "setup-playbook", playbookData); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "ansible-setup", playbookData); err != nil {
 		return err
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()["ansible-inventory"]
-	if err := generateStandardTemplate(&fileTemplate, "inventory", app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "ansible-inventory", app); err != nil {
 		return err
 	}
 
@@ -105,7 +128,6 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 	return nil
 }
 
-// ? All should just go output to the "tsukatsuki-generated" directory i guess?
 func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error {
 	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
@@ -121,7 +143,6 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 	return nil
 }
 
-// TODO: ADD MORE PRESETS, TEST IT
 func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
 	// Mapping name of docker-compose.yml in template_provider.go
 	const composeTemplateName = "docker-compose"

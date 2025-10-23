@@ -62,7 +62,7 @@ func InitializeSelectionsSchema() *Selections {
 					{
 						Title:       "CI Only",
 						Description: "No need for any kind of configuration",
-						Value:       "ci",
+						Value:       "actions-ci",
 					},
 				},
 			},
