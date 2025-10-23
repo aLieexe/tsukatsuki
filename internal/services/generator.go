@@ -23,14 +23,14 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 	}{
 		// This should be fine for now, can add the service later
 		{"compose generation", func() error {
-			return app.GenerateCompose([]string{app.Webserver}, filepath.Join(app.OutputDir, "conf"))
+			return app.GenerateCompose([]string{app.Webserver})
 		}},
 		{"ansible files generation", func() error {
-			return app.GenerateAnsibleFiles([]string{app.Webserver}, filepath.Join(app.OutputDir, "ansible"))
+			return app.GenerateAnsibleFiles([]string{app.Webserver})
 		}},
 		{"configuration files generation", func() error {
 			// We also need to get the Dockerfile and the rsyncignore files,
-			return app.GenerateConfigurationFiles([]string{app.Webserver, "dockerfile", "rsync-ignore"}, filepath.Join(app.OutputDir, "conf"))
+			return app.GenerateConfigurationFiles([]string{app.Webserver, "go-dockerfile", "rsync-ignore"})
 		}},
 	}
 
@@ -43,12 +43,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 	return nil
 }
 
-func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) error {
-	err := createOutputDirectory(outDir)
-	if err != nil {
-		return err
-	}
-
+func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 	playbookData := struct {
 		Roles []string
 	}{
@@ -59,32 +54,29 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	playbookData.Roles = append(playbookData.Roles, "docker")
 	playbookData.Roles = append(playbookData.Roles, serviceList...)
 
-	templateProvider, err := assets.NewTemplateProvider()
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
 		return err
 	}
 
 	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]
-	if err := generateStandardTemplate(&fileTemplate, "setup-playbook", outDir, playbookData); err != nil {
+
+	if err := generateStandardTemplate(&fileTemplate, "setup-playbook", playbookData); err != nil {
 		return err
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()["ansible-inventory"]
-	if err := generateStandardTemplate(&fileTemplate, "inventory", outDir, app); err != nil {
-		return err
-	}
-
-	varsDir := filepath.Join(outDir, "/group_vars")
-	err = createOutputDirectory(varsDir)
-	if err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "inventory", app); err != nil {
 		return err
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()["ansible-vars"]
-	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", varsDir, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", app); err != nil {
 		return err
 	}
 
+	// TODO: Fix this, implement a provider for the static files
+	outDir := filepath.Join(app.OutputDir, "ansible")
 	// Copy the file that we wont need to template
 	err = copyFile("static/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
 	if err != nil {
@@ -114,20 +106,15 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 }
 
 // ? All should just go output to the "tsukatsuki-generated" directory i guess?
-func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir string) error {
-	err := createOutputDirectory(outDir)
-	if err != nil {
-		return err
-	}
-
-	templateProvider, err := assets.NewTemplateProvider()
+func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error {
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
 		return err
 	}
 
 	for _, templateName := range templateNeeded {
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
-		if err := generateStandardTemplate(&fileTemplate, templateName, outDir, app); err != nil {
+		if err := generateStandardTemplate(&fileTemplate, templateName, app); err != nil {
 			return err
 		}
 	}
@@ -135,20 +122,20 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir
 }
 
 // TODO: ADD MORE PRESETS, TEST IT
-func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) error {
+func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
 	// Mapping name of docker-compose.yml in template_provider.go
 	const composeTemplateName = "docker-compose"
 
-	err := createOutputDirectory(outDir)
-	if err != nil {
-		return err
-	}
-
-	templateProvider, err := assets.NewTemplateProvider()
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
 		return err
 	}
 	composeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
+
+	err = createOutputDirectory(composeTemplate.OutputDir)
+	if err != nil {
+		return err
+	}
 
 	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(composeTemplate.Content))
 	if err != nil {
@@ -156,7 +143,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	}
 
 	// create output file
-	filePath := filepath.Join(outDir, composeTemplate.Filename)
+	filePath := filepath.Join(composeTemplate.OutputDir, composeTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", filePath, err)
@@ -230,7 +217,12 @@ func createOutputDirectory(dir string) error {
 	return nil
 }
 
-func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, outDir string, data any) error {
+func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName string, data any) error {
+	err := createOutputDirectory(fileTemplate.OutputDir)
+	if err != nil {
+		return err
+	}
+
 	content := string(fileTemplate.Content)
 	if content == "" {
 		return fmt.Errorf("template content is empty for %s", templateName)
@@ -242,7 +234,7 @@ func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, o
 	}
 
 	// create output file
-	filePath := filepath.Join(outDir, fileTemplate.Filename)
+	filePath := filepath.Join(fileTemplate.OutputDir, fileTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", filePath, err)
