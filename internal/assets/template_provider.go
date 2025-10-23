@@ -9,8 +9,9 @@ import (
 )
 
 type FileTemplate struct {
-	Content  []byte
-	Filename string
+	Content   []byte
+	Filename  string
+	OutputDir string
 }
 
 type ComposePresetTemplates struct {
@@ -34,13 +35,18 @@ var composeVolumeConfig = map[string][]string{
 	"nginx": nil,
 }
 
-func NewTemplateProvider() (*TemplateProvider, error) {
+const (
+	templateEmbedDirectory = "templates"
+	composeEmbedDirectory  = "compose"
+)
+
+func NewTemplateProvider(generatedDir string) (*TemplateProvider, error) {
 	provider := &TemplateProvider{
 		fileTemplates:           make(map[string]FileTemplate),
 		composePresetsTemplates: make(map[string]ComposePresetTemplates),
 	}
 
-	err := provider.loadFileTemplates()
+	err := provider.loadFileTemplates(generatedDir)
 	if err != nil {
 		return nil, err
 	}
@@ -53,34 +59,57 @@ func NewTemplateProvider() (*TemplateProvider, error) {
 }
 
 // loading, and mapping the files
-func (tp *TemplateProvider) loadFileTemplates() error {
+func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 	// template mappings, id: path
 	fileTemplateMappings := map[string]string{
-		"caddy":             "files/Caddyfile.tmpl",
-		"nginx":             "files/nginx.conf.tmpl",
-		"docker-compose":    "files/docker-compose.yaml.tmpl",
-		"dockerfile":        "files/Dockerfile.tmpl",
-		"rsync-ignore":      "files/.rsyncignore.tmpl",
+		"caddy":          "files/Caddyfile.tmpl",
+		"nginx":          "files/nginx.conf.tmpl",
+		"rsync-ignore":   "files/.rsyncignore.tmpl",
+		"docker-compose": "files/docker-compose.yaml.tmpl",
+
 		"ansible-setup":     "ansible/setup.yaml.tmpl",
 		"ansible-vars":      "ansible/all.yaml.tmpl",
 		"ansible-inventory": "ansible/inventory.ini.tmpl",
+
+		"go-dockerfile": "files/Dockerfile.tmpl",
+
+		"go-actions-ci": "files/go-ci.yaml.tmpl",
 	}
 
 	// filename mappings for output id: output_name
 	fileNameMappings := map[string]string{
-		"caddy":             "Caddyfile",
-		"nginx":             "nginx.conf",
-		"docker-compose":    "docker-compose.yaml",
-		"dockerfile":        "Dockerfile",
-		"rsync-ignore":      ".rsyncignore",
+		"caddy":          "Caddyfile",
+		"nginx":          "nginx.conf",
+		"docker-compose": "docker-compose.yaml",
+		"rsync-ignore":   ".rsyncignore",
+
 		"ansible-setup":     "setup.yaml",
 		"ansible-vars":      "all.yaml",
 		"ansible-inventory": "inventory.ini",
+
+		"go-dockerfile": "Dockerfile",
+
+		"go-actions-ci": "go-ci.yaml",
 	}
 
-	subFS, err := fs.Sub(templatesFS, "templates")
+	outputDirMappings := map[string]string{
+		"caddy":          filepath.Join(generatedDir, "conf"),
+		"nginx":          filepath.Join(generatedDir, "conf"),
+		"rsync-ignore":   filepath.Join(generatedDir, "conf"),
+		"docker-compose": filepath.Join(generatedDir, "conf"),
+
+		"ansible-setup":     filepath.Join(generatedDir, "ansible"),
+		"ansible-vars":      filepath.Join(generatedDir, "ansible/group_vars"),
+		"ansible-inventory": filepath.Join(generatedDir, "ansible"),
+
+		"go-dockerfile": filepath.Join(generatedDir, "conf"),
+
+		"go-actions-ci": ".github/workflows",
+	}
+
+	subFS, err := fs.Sub(templatesFS, templateEmbedDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating sub filesystem for '%s': %w", templateEmbedDirectory, err)
 	}
 
 	for key, path := range fileTemplateMappings {
@@ -90,8 +119,9 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 		}
 
 		tp.fileTemplates[key] = FileTemplate{
-			Content:  content,
-			Filename: fileNameMappings[key],
+			Content:   content,
+			Filename:  fileNameMappings[key],
+			OutputDir: outputDirMappings[key],
 		}
 	}
 
@@ -99,14 +129,14 @@ func (tp *TemplateProvider) loadFileTemplates() error {
 }
 
 func (tp *TemplateProvider) loadComposePresets() error {
-	subFS, err := fs.Sub(templatesFS, "templates")
+	subFS, err := fs.Sub(templatesFS, templateEmbedDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("creating sub filesystem for '%s': %w", templateEmbedDirectory, err)
 	}
 
-	entries, err := fs.ReadDir(subFS, "compose")
+	entries, err := fs.ReadDir(subFS, composeEmbedDirectory)
 	if err != nil {
-		return err
+		return fmt.Errorf("reading compose directory '%s': %w", composeEmbedDirectory, err)
 	}
 
 	for _, entry := range entries {
@@ -117,9 +147,9 @@ func (tp *TemplateProvider) loadComposePresets() error {
 		// extract preset name from filename (remove .tmpl extension)
 		presetName := strings.TrimSuffix(entry.Name(), ".tmpl")
 
-		content, err := fs.ReadFile(subFS, filepath.Join("compose", entry.Name()))
+		content, err := fs.ReadFile(subFS, filepath.Join(composeEmbedDirectory, entry.Name()))
 		if err != nil {
-			return fmt.Errorf("failed to read compose preset named %s", entry.Name())
+			return fmt.Errorf("reading compose preset named '%s': %w", entry.Name(), err)
 		}
 
 		tp.composePresetsTemplates[presetName] = ComposePresetTemplates{

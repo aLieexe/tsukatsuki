@@ -17,36 +17,56 @@ type ComposeConfig struct {
 }
 
 func (app *AppConfig) GenerateDeploymentFiles() error {
-	res := make([]string, 0)
-	res = append(res, app.Webserver)
+	operations := []struct {
+		name string
+		fn   func() error
+	}{
+		// This should be fine for now, can add the service later
+		{"compose generation", func() error {
+			return app.GenerateCompose([]string{app.Webserver})
+		}},
+		{"ansible files generation", func() error {
+			return app.GenerateAnsibleFiles([]string{app.Webserver})
+		}},
+		{"configuration files generation", func() error {
+			return app.GenerateConfigurationFiles([]string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"})
+		}},
 
-	err := app.GenerateCompose(res, filepath.Join(app.OutputDir, "conf"))
+		{"github actions files generation", func() error {
+			return app.GenerateActionsFiles()
+		}},
+	}
+
+	for _, op := range operations {
+		if err := op.fn(); err != nil {
+			return fmt.Errorf("%s failed: %w", op.name, err)
+		}
+	}
+
+	return nil
+}
+
+// TODO: Refactor it to be able to do array, Planning on changing the github stuff into multi choice instead
+func (app *AppConfig) GenerateActionsFiles() error {
+	if app.GithubActions == "none" {
+		return nil
+	}
+
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
 		return err
 	}
 
-	err = app.GenerateAnsibleFiles(res, filepath.Join(app.OutputDir, "ansible"))
-	if err != nil {
-		return err
-	}
+	fileTemplate := templateProvider.GetFileTemplates()[fmt.Sprintf("%s-%s", app.Runtime, app.GithubActions)]
 
-	res = append(res, "dockerfile")
-	res = append(res, "rsync-ignore")
-
-	err = app.GenerateConfigurationFiles(res, filepath.Join(app.OutputDir, "conf"))
-	if err != nil {
+	if err := generateStandardTemplate(&fileTemplate, fmt.Sprintf("%s-%s", app.Runtime, app.GithubActions), app); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) error {
-	err := createOutputDirectory(outDir)
-	if err != nil {
-		return err
-	}
-
+func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 	playbookData := struct {
 		Roles []string
 	}{
@@ -57,32 +77,29 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	playbookData.Roles = append(playbookData.Roles, "docker")
 	playbookData.Roles = append(playbookData.Roles, serviceList...)
 
-	templateProvider, err := assets.NewTemplateProvider()
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
 		return err
 	}
 
 	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]
-	if err := generateStandardTemplate(&fileTemplate, "setup-playbook", outDir, playbookData); err != nil {
+
+	if err := generateStandardTemplate(&fileTemplate, "ansible-setup", playbookData); err != nil {
 		return err
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()["ansible-inventory"]
-	if err := generateStandardTemplate(&fileTemplate, "inventory", outDir, app); err != nil {
-		return err
-	}
-
-	varsDir := filepath.Join(outDir, "/group_vars")
-	err = createOutputDirectory(varsDir)
-	if err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "ansible-inventory", app); err != nil {
 		return err
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()["ansible-vars"]
-	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", varsDir, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", app); err != nil {
 		return err
 	}
 
+	// TODO: Fix this, implement a provider for the static files
+	outDir := filepath.Join(app.OutputDir, "ansible")
 	// Copy the file that we wont need to template
 	err = copyFile("static/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
 	if err != nil {
@@ -111,50 +128,46 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string, outDir string) 
 	return nil
 }
 
-// ? All should just go output to the "tsukatsuki-generated" directory i guess?
-func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, outDir string) error {
-	err := createOutputDirectory(outDir)
-	if err != nil {
-		return err
-	}
-
-	templateProvider, err := assets.NewTemplateProvider()
+func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error {
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
 		return err
 	}
 
 	for _, templateName := range templateNeeded {
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
-		if err := generateStandardTemplate(&fileTemplate, templateName, outDir, app); err != nil {
+		if err := generateStandardTemplate(&fileTemplate, templateName, app); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-// TODO: ADD MORE PRESETS, TEST IT
-func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) error {
-	err := createOutputDirectory(outDir)
+func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
+	// Mapping name of docker-compose.yml in template_provider.go
+	const composeTemplateName = "docker-compose"
+
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
+	if err != nil {
+		return err
+	}
+	composeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
+
+	err = createOutputDirectory(composeTemplate.OutputDir)
 	if err != nil {
 		return err
 	}
 
-	templateProvider, err := assets.NewTemplateProvider()
+	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(composeTemplate.Content))
 	if err != nil {
-		return err
-	}
-	composeTemplate := templateProvider.GetFileTemplates()["docker-compose"]
-
-	tmpl, err := template.New("docker-compose").Option("missingkey=error").Parse(string(composeTemplate.Content))
-	if err != nil {
-		return fmt.Errorf("error parsing template %s: %w", composeTemplate.Filename, err)
+		return fmt.Errorf("parsing template %s: %w", composeTemplate.Filename, err)
 	}
 
 	// create output file
-	filePath := filepath.Join(outDir, composeTemplate.Filename)
+	filePath := filepath.Join(composeTemplate.OutputDir, composeTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("error creating file %s: %w", filePath, err)
+		return fmt.Errorf("creating file %s: %w", filePath, err)
 	}
 
 	defer func() {
@@ -165,7 +178,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 		}
 	}()
 
-	// temp to combine all the presets,
+	// Combine all the needed data, that is the services and the volumes needed for said service to function
 	templateData := struct {
 		Service []string
 		Volumes []string
@@ -177,11 +190,10 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 	presetProvider := templateProvider.GetComposePresetTemplates()
 	for _, presetName := range presetNeeded {
 		if preset, exists := presetProvider[presetName]; exists {
-			// add the services
+			// All the service and volumes listed previously
 			serviceDefinition := string(preset.Content)
 			templateData.Service = append(templateData.Service, serviceDefinition)
 
-			// add volumes from preset
 			if preset.Volume != nil {
 				templateData.Volumes = append(templateData.Volumes, preset.Volume...)
 			}
@@ -190,7 +202,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string, outDir string) erro
 
 	err = tmpl.Execute(file, templateData)
 	if err != nil {
-		return fmt.Errorf("error executing template: %w", err)
+		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 
 	return nil
@@ -208,31 +220,45 @@ func createOutputDirectory(dir string) error {
 			if writeErr != nil {
 				return fmt.Errorf("no write permission in %q: %w", dir, writeErr)
 			}
-			err := f.Close()
-			if err != nil {
-				return err
+
+			if closeErr := f.Close(); closeErr != nil {
+				return fmt.Errorf("closing test file %s: %w", f.Name(), closeErr)
 			}
-			err = os.Remove(testFile) // clean up
-			return err
+
+			// Clean up test
+			if removeErr := os.Remove(testFile); removeErr != nil {
+				return fmt.Errorf("removing test file %s: %w", f.Name(), removeErr)
+			}
+			return nil
 		}
 		// i think parent dir permission also go here? not sure
-		return err
+		return fmt.Errorf("creating directory %s: %w", dir, err)
 	}
 
 	return nil
 }
 
-func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, outDir string, data any) error {
-	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(string(fileTemplate.Content))
+func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName string, data any) error {
+	err := createOutputDirectory(fileTemplate.OutputDir)
 	if err != nil {
-		return fmt.Errorf("error parsing template %s: %w", templateName, err)
+		return err
+	}
+
+	content := string(fileTemplate.Content)
+	if content == "" {
+		return fmt.Errorf("template content is empty for %s", templateName)
+	}
+
+	tmpl, err := template.New(templateName).Option("missingkey=error").Parse(content)
+	if err != nil {
+		return fmt.Errorf("parsing template '%s': %w", templateName, err)
 	}
 
 	// create output file
-	filePath := filepath.Join(outDir, fileTemplate.Filename)
+	filePath := filepath.Join(fileTemplate.OutputDir, fileTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("error creating file %s: %w", filePath, err)
+		return fmt.Errorf("creating file %s: %w", filePath, err)
 	}
 
 	defer func() {
@@ -245,7 +271,7 @@ func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName, o
 
 	// execute template with the data needed
 	if err := tmpl.Execute(file, data); err != nil {
-		return fmt.Errorf("error executing template %s: %w", templateName, err)
+		return fmt.Errorf("executing template %s: %w", templateName, err)
 	}
 
 	return nil

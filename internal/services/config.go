@@ -60,7 +60,7 @@ func NewAppConfig() *AppConfig {
 	return cfg
 }
 
-func (app *AppConfig) CreateConfigurationFile() error {
+func (app *AppConfig) SaveConfigToFile() error {
 	var cfg config.AppConfigYaml
 
 	cfg.Project.Name = app.ProjectName
@@ -77,10 +77,10 @@ func (app *AppConfig) CreateConfigurationFile() error {
 	cfg.GithubActions.Branch = app.Branch
 
 	cfg.Path.LocalPath = app.LocalPath
-	cfg.Path.RemotePath = app.ProjectName
+	cfg.Path.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", app.ProjectName)
 	cfg.Path.OutputDir = app.OutputDir
 
-	return config.CreateConfigFiles(cfg)
+	return config.UpdateConfigFile(cfg)
 }
 
 func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
