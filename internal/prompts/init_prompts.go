@@ -29,16 +29,22 @@ func InitializeSelectionsSchema() *Selections {
 				},
 			},
 
-			// "services": {
-			// 	Headers: "Services choices",
-			// 	Options: []Item{
-			// 		{
-			// 			Title:       "Postgresql",
-			// 			Description: "Opensource database with elephant logo",
-			// 			Value:       "caddy",
-			// 		},
-			// 	},
-			// },
+			"services": {
+				Headers: "Services choices",
+				Options: []Item{
+					{
+						Title:       "Postgresql",
+						Description: "A free and open-source relational database management system",
+						Value:       "postgresql",
+					},
+
+					{
+						Title:       "Redis",
+						Description: "An in-memory key-value database",
+						Value:       "redis",
+					},
+				},
+			},
 
 			"runtime": {
 				Headers: "What runtime duh",

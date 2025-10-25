@@ -11,6 +11,22 @@ import (
 	"github.com/aLieexe/tsukatsuki/internal/utils"
 )
 
+type Service struct {
+	Name        string
+	DockerImage string
+}
+
+func GetDefaultImageMap() map[string]string {
+	imageMap := map[string]string{
+		"caddy": "caddy:2.10.2-alpine",
+
+		"postgresql": "postgres:18.0-alpine",
+		"redis":      "redis:8.2-alpine3.22",
+	}
+
+	return imageMap
+}
+
 type AppConfig struct {
 	ProjectName string
 	AppPort     int
@@ -22,6 +38,9 @@ type AppConfig struct {
 
 	AppSiteAddress string
 	Webserver      string
+	WebserverImage string
+
+	Services []Service
 
 	Branch        string
 	GithubActions string
@@ -45,6 +64,9 @@ func NewAppConfig() *AppConfig {
 
 		AppSiteAddress: "placeholder.com",
 		Webserver:      "caddy",
+		WebserverImage: "latest",
+
+		Services: nil,
 
 		Branch:        "main",
 		GithubActions: "none",
@@ -72,6 +94,17 @@ func (app *AppConfig) SaveConfigToFile() error {
 
 	cfg.Webserver.Domain = app.AppSiteAddress
 	cfg.Webserver.Type = app.Webserver
+	cfg.Webserver.DockerImage = app.WebserverImage
+
+	for _, service := range app.Services {
+		cfg.Services = append(cfg.Services, struct {
+			Name        string `yaml:"name"`
+			DockerImage string `yaml:"docker_image"`
+		}{
+			Name:        service.Name,
+			DockerImage: service.DockerImage,
+		})
+	}
 
 	cfg.GithubActions.Mode = app.GithubActions
 	cfg.GithubActions.Branch = app.Branch
@@ -84,6 +117,14 @@ func (app *AppConfig) SaveConfigToFile() error {
 }
 
 func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
+	var services []Service
+	for _, yamlService := range yamlConfig.Services {
+		services = append(services, Service{
+			Name:        yamlService.Name,
+			DockerImage: yamlService.DockerImage,
+		})
+	}
+
 	cfg := &AppConfig{
 		ProjectName: yamlConfig.Project.Name,
 		AppPort:     yamlConfig.Project.Port,
@@ -95,6 +136,9 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 
 		Webserver:      yamlConfig.Webserver.Type,
 		AppSiteAddress: yamlConfig.Webserver.Domain,
+		WebserverImage: yamlConfig.Webserver.DockerImage,
+
+		Services: services,
 
 		LocalPath:  yamlConfig.Path.LocalPath,
 		RemotePath: yamlConfig.Path.RemotePath,
