@@ -21,12 +21,15 @@ type AppConfigYaml struct {
 	} `yaml:"server"`
 
 	Webserver struct {
-		Type   string `yaml:"type"`
-		Domain string `yaml:"domain"`
+		Type        string `yaml:"type"`
+		Domain      string `yaml:"domain"`
+		DockerImage string `yaml:"docker_image"`
 	} `yaml:"webserver"`
 
-	// Services []struct {
-	// }
+	Services []struct {
+		Name        string `yaml:"name"`
+		DockerImage string `yaml:"docker_image"`
+	} `yaml:"services"`
 
 	Path struct {
 		LocalPath  string `yaml:"local_path"`

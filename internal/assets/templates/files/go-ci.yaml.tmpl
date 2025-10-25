@@ -56,5 +56,5 @@ jobs:
         run: go mod verify
 
       - name: Build application
-        run: go build -ldflags='-s' -o=./bin/api ./{{ .MainPath }}
+        run: go build -ldflags='-s' -o=./bin/api {{ .MainPath }}
 

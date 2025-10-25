@@ -17,6 +17,7 @@ import (
 	"github.com/aLieexe/tsukatsuki/internal/log"
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui/multiselect"
 	"github.com/aLieexe/tsukatsuki/internal/ui/singleselect"
 	"github.com/aLieexe/tsukatsuki/internal/ui/textinput"
 	"github.com/aLieexe/tsukatsuki/internal/utils"
@@ -33,6 +34,8 @@ type UserInput struct {
 	Webserver     *singleselect.Output
 	Runtime       *singleselect.Output
 	GithubActions *singleselect.Output
+
+	Services *multiselect.Output
 }
 
 // initCmd represents the init command
@@ -72,6 +75,8 @@ func runInitCommand(cmd *cobra.Command) {
 		Webserver:     &singleselect.Output{},
 		Runtime:       &singleselect.Output{},
 		GithubActions: &singleselect.Output{},
+
+		Services: &multiselect.Output{},
 	}
 
 	selectionSchema := prompts.InitializeSelectionsSchema()
@@ -134,6 +139,17 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.AppSiteAddress = u.Host
 	cfg.ExitCLI(teaProgram)
 
+	// run time question
+	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
+	if _, err := teaProgram.Run(); err != nil {
+		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		os.Exit(1)
+	}
+	cfg.Runtime = userInput.Runtime.Value
+	cfg.ExitCLI(teaProgram)
+
+	imageMap := services.GetDefaultImageMap()
+
 	// webserver single select question
 	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
@@ -143,14 +159,23 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.Webserver = userInput.Webserver.Value
 	cfg.ExitCLI(teaProgram)
 
-	// run time question
-	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
+	cfg.WebserverImage = imageMap[userInput.Webserver.Value]
+
+	// Services Multi-choice question
+	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.Services, selectionSchema.Flow["services"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
-	cfg.Runtime = userInput.Runtime.Value
 	cfg.ExitCLI(teaProgram)
+
+	for _, svc := range userInput.Services.Value {
+		service := services.Service{
+			Name:        svc,
+			DockerImage: imageMap[svc],
+		}
+		cfg.Services = append(cfg.Services, service)
+	}
 
 	// actions question
 	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], cfg))
