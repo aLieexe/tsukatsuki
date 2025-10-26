@@ -5,10 +5,8 @@ package cmd
 
 import (
 	"fmt"
-	"net/url"
 	"os"
 	"strconv"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -152,15 +150,7 @@ func runInitCommand(cmd *cobra.Command) {
 		os.Exit(1)
 	}
 
-	if !strings.HasPrefix(userInput.AppSiteAddress.Value, "http://") && !strings.HasPrefix(userInput.AppSiteAddress.Value, "https://") {
-		userInput.AppSiteAddress.Value = "http://" + userInput.AppSiteAddress.Value
-	}
-	u, err := url.Parse(userInput.AppSiteAddress.Value)
-	if err != nil {
-		log.Error(err.Error())
-	}
-
-	cfg.AppSiteAddress = u.Host
+	cfg.AppSiteAddress = userInput.AppSiteAddress.Value
 	cfg.ExitCLI(teaProgram)
 
 	// webserver single select question
