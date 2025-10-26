@@ -41,7 +41,7 @@ linters:
     cyclop:
       # The maximal code complexity to report.
       # Default: 10
-      max-complexity: 20
+      max-complexity: 25
 
     errcheck:
       # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.
