@@ -78,3 +78,28 @@
     path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
     mode: '0644'
   delegate_to: localhost
+
+- name: Check if .gitignore exists
+  stat:
+    path: "{{ playbook_dir }}/.gitignore"
+  register: gitignore_check
+  delegate_to: localhost
+
+
+- name: Create .gitignore if not exist
+  file:
+    path: "{{ playbook_dir }}/.gitignore"
+    state: touch
+  when: not gitignore_check.stat.exists
+  delegate_to: localhost
+
+
+- name: Add needed lines to .gitignore
+  blockinfile:
+    path:
+    block: | 
+      # Added by tsukatsuki
+      key/
+      .ansible/
+    create: yes
+  delegate_to: localhost
