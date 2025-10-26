@@ -24,7 +24,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 	}{
 		// This should be fine for now, can add the service later
 		{"compose generation", func() error {
-			return app.GenerateCompose([]string{app.Webserver})
+			return app.GenerateCompose()
 		}},
 		{"ansible files generation", func() error {
 			return app.GenerateAnsibleFiles([]string{app.Webserver})
@@ -144,7 +144,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 	return nil
 }
 
-func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
+func (app *AppConfig) GenerateCompose() error {
 	// Mapping name of docker-compose.yml in template_provider.go
 	const composeTemplateName = "docker-compose"
 
@@ -188,19 +188,31 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
 		Volumes: []string{},
 	}
 
+	// Combine services and webserver, why do i seperate this again?
+	services := []Service{
+		{Name: app.Webserver, DockerImage: app.WebserverImage},
+	}
+
+	for _, service := range app.Services {
+		services = append(services, Service{
+			Name:        service.Name,
+			DockerImage: service.DockerImage,
+		})
+	}
+
 	presetProvider := templateProvider.GetComposePresetTemplates()
-	for _, presetName := range presetNeeded {
-		if preset, exists := presetProvider[presetName]; exists {
+	for _, service := range services {
+		if preset, exists := presetProvider[service.Name]; exists {
 			// Exec all the preset byitself
-			serviceTmpl, err := template.New(presetName).Option("missingkey=error").Parse(string(preset.Content))
+			serviceTmpl, err := template.New(service.Name).Option("missingkey=error").Parse(string(preset.Content))
 			if err != nil {
-				return fmt.Errorf("parsing template %s: %w", presetName, err)
+				return fmt.Errorf("parsing template %s: %w", service.Name, err)
 			}
 
 			var buffer bytes.Buffer
-			err = serviceTmpl.Execute(&buffer, app)
+			err = serviceTmpl.Execute(&buffer, service)
 			if err != nil {
-				return fmt.Errorf("executing template %s: %w", presetName, err)
+				return fmt.Errorf("executing template %s: %w", service.Name, err)
 			}
 
 			// All the service and volumes listed previously
@@ -216,7 +228,6 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
 
 	err = tmpl.Execute(file, templateData)
 	if err != nil {
-		fmt.Println("SDLKLKJD")
 		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 

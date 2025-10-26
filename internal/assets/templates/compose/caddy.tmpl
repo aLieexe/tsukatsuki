@@ -1,5 +1,5 @@
 caddy:
-    image: {{ .WebserverImage }}
+    image: {{ .DockerImage }}
     restart: unless-stopped
     ports:
     - "80:80"
