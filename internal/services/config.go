@@ -18,6 +18,8 @@ type Service struct {
 
 func GetDefaultImageMap() map[string]string {
 	imageMap := map[string]string{
+		"go": "golang:1.24.4-bookworm",
+
 		"caddy": "caddy:2.10.2-alpine",
 
 		"postgresql": "postgres:18.0-alpine",
@@ -32,6 +34,7 @@ type AppConfig struct {
 	AppPort     int
 	Runtime     string
 	MainPath    string
+	AppImage    string
 
 	ServerIP  string
 	SetupUser string
@@ -58,6 +61,7 @@ func NewAppConfig() *AppConfig {
 		AppPort:     5050,
 		Runtime:     "go",
 		MainPath:    utils.GetMainFileLocation(),
+		AppImage:    "latest",
 
 		ServerIP:  "127.0.0.1",
 		SetupUser: "user1",
@@ -88,6 +92,7 @@ func (app *AppConfig) SaveConfigToFile() error {
 	cfg.Project.Name = app.ProjectName
 	cfg.Project.Port = app.AppPort
 	cfg.Project.Runtime = app.Runtime
+	cfg.Project.DockerImage = app.AppImage
 
 	cfg.Server.IP = app.ServerIP
 	cfg.Server.SetupUser = app.SetupUser
@@ -129,7 +134,9 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 		ProjectName: yamlConfig.Project.Name,
 		AppPort:     yamlConfig.Project.Port,
 		Runtime:     yamlConfig.Project.Runtime,
-		MainPath:    utils.GetMainFileLocation(),
+		AppImage:    yamlConfig.Project.DockerImage,
+
+		MainPath: utils.GetMainFileLocation(),
 
 		ServerIP:  yamlConfig.Server.IP,
 		SetupUser: yamlConfig.Server.SetupUser,

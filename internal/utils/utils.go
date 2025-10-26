@@ -48,6 +48,10 @@ func PortValidator(input string) error {
 }
 
 func SiteAddressValidator(input string) error {
+	if !strings.HasPrefix(input, "http://") && !strings.HasPrefix(input, "https://") {
+		input = "http://" + input
+	}
+
 	_, err := url.Parse(input)
 	if err != nil {
 		return fmt.Errorf("must be a valid address")

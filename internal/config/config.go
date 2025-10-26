@@ -10,9 +10,10 @@ import (
 
 type AppConfigYaml struct {
 	Project struct {
-		Name    string `yaml:"name"`
-		Port    int    `yaml:"port"`
-		Runtime string `yaml:"runtime"`
+		Name        string `yaml:"name"`
+		Port        int    `yaml:"port"`
+		Runtime     string `yaml:"runtime"`
+		DockerImage string `yaml:"docker_image"`
 	} `yaml:"project"`
 
 	Server struct {
