@@ -1,6 +1,7 @@
 package services
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -190,8 +191,21 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
 	presetProvider := templateProvider.GetComposePresetTemplates()
 	for _, presetName := range presetNeeded {
 		if preset, exists := presetProvider[presetName]; exists {
+			// Exec all the preset byitself
+			serviceTmpl, err := template.New(presetName).Option("missingkey=error").Parse(string(preset.Content))
+			if err != nil {
+				return fmt.Errorf("parsing template %s: %w", presetName, err)
+			}
+
+			var buffer bytes.Buffer
+			err = serviceTmpl.Execute(&buffer, app)
+			if err != nil {
+				return fmt.Errorf("executing template %s: %w", presetName, err)
+			}
+
 			// All the service and volumes listed previously
-			serviceDefinition := string(preset.Content)
+			serviceDefinition := string(buffer.String())
+
 			templateData.Service = append(templateData.Service, serviceDefinition)
 
 			if preset.Volume != nil {
@@ -202,6 +216,7 @@ func (app *AppConfig) GenerateCompose(presetNeeded []string) error {
 
 	err = tmpl.Execute(file, templateData)
 	if err != nil {
+		fmt.Println("SDLKLKJD")
 		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 

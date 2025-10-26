@@ -1,5 +1,5 @@
 caddy:
-    image: caddy:2.10.2-alpine
+    image: {{ .WebserverImage }}
     restart: unless-stopped
     ports:
     - "80:80"
