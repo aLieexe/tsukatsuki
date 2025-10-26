@@ -80,6 +80,7 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 
 	selectionSchema := prompts.InitializeSelectionsSchema()
+	imageMap := services.GetDefaultImageMap()
 
 	// AppName Question
 	teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), cfg, nil))
@@ -104,6 +105,25 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 	cfg.AppPort = converted
 	cfg.ExitCLI(teaProgram)
+
+	// run time question
+	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
+	if _, err := teaProgram.Run(); err != nil {
+		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		os.Exit(1)
+	}
+	cfg.Runtime = userInput.Runtime.Value
+	cfg.ExitCLI(teaProgram)
+
+	fmt.Println()
+	fmt.Println()
+
+	appImg, exists := imageMap[userInput.Runtime.Value]
+	if !exists {
+		log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+		os.Exit(1)
+	}
+	cfg.AppImage = appImg
 
 	// ServerIP Question
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", cfg, utils.IpValidator))
@@ -135,20 +155,13 @@ func runInitCommand(cmd *cobra.Command) {
 	if !strings.HasPrefix(userInput.AppSiteAddress.Value, "http://") && !strings.HasPrefix(userInput.AppSiteAddress.Value, "https://") {
 		userInput.AppSiteAddress.Value = "http://" + userInput.AppSiteAddress.Value
 	}
-	u, _ := url.Parse(userInput.AppSiteAddress.Value)
+	u, err := url.Parse(userInput.AppSiteAddress.Value)
+	if err != nil {
+		log.Error(err.Error())
+	}
+
 	cfg.AppSiteAddress = u.Host
 	cfg.ExitCLI(teaProgram)
-
-	// run time question
-	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
-	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
-		os.Exit(1)
-	}
-	cfg.Runtime = userInput.Runtime.Value
-	cfg.ExitCLI(teaProgram)
-
-	imageMap := services.GetDefaultImageMap()
 
 	// webserver single select question
 	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], cfg))
@@ -159,7 +172,11 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.Webserver = userInput.Webserver.Value
 	cfg.ExitCLI(teaProgram)
 
-	cfg.WebserverImage = imageMap[userInput.Webserver.Value]
+	cfg.WebserverImage, exists = imageMap[userInput.Webserver.Value]
+	if !exists {
+		log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+		os.Exit(1)
+	}
 
 	// Services Multi-choice question
 	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.Services, selectionSchema.Flow["services"], cfg))
@@ -170,9 +187,15 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.ExitCLI(teaProgram)
 
 	for _, svc := range userInput.Services.Value {
+		img, exists := imageMap[svc]
+		if !exists {
+			log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+			os.Exit(1)
+		}
+
 		service := services.Service{
 			Name:        svc,
-			DockerImage: imageMap[svc],
+			DockerImage: img,
 		}
 		cfg.Services = append(cfg.Services, service)
 	}
