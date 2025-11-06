@@ -1,9 +1,3 @@
-- name: debug to check connection
-  ansible.builtin.debug:
-    msg:
-    - "Hello world"
-    - "How can i kill myself"
-
 - name: Sync all the project folder to home
   ansible.posix.synchronize:
     src: "{{ local_project_path }}/"

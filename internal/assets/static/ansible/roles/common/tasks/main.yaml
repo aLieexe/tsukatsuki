@@ -5,34 +5,50 @@
 
 - name: Install essential packages
   ansible.builtin.apt:
-    name: 
-      - git
-      - gnupg
-      - make
-      - ufw
-      - curl
-      - rsync
+    name:
+    - git
+    - gnupg
+    - make
+    - ufw
+    - curl
+    - rsync
     state: present
+
+- name: Ensure systemd-timesyncd is installed
+  ansible.builtin.apt:
+    name: systemd-timesyncd
+    state: present
+  become: true
 
 - name: Enable timedatectl ntp
   ansible.builtin.service:
     name: systemd-timesyncd.service
     enabled: yes
 
-
 - name: Configure UFW to allow SSH, HTTP, and HTTPS
   community.general.ufw:
     rule: allow
     proto: tcp
     port: '{{item}}'
-  loop: 
-    - '80'
-    - '443'
-    - '22'
+  loop:
+  - '80'
+  - '443'
+  - '22'
+  tags:
+    - molecule-idempotence-notest
+
+
 
 - name: Enable UFW
   community.general.ufw:
     state: enabled
+
+# Used in the case of if user is a root user, useful in minimal installation
+# SSH by default did not permit any root login, therefore this probbaly only gonna be used during molecule testing, teehee
+- name: Create a setup user
+  ansible.builtin.include_tasks:
+    file: setup-user.yaml
+  when: ansible_user == "root" 
 
 - name: Create a user
   ansible.builtin.user:
@@ -72,34 +88,38 @@
     path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
     mode: '0600'
   delegate_to: localhost
+  when: not molecule_testing  | default(false)
 
 - name: Set permissions on fetched public key
   ansible.builtin.file:
     path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
     mode: '0644'
   delegate_to: localhost
+  when: not molecule_testing | default(false)
 
 - name: Check if .gitignore exists
-  stat:
+  ansible.builtin.stat:
     path: "{{ playbook_dir }}/.gitignore"
   register: gitignore_check
   delegate_to: localhost
-
+  when: not molecule_testing | default(false)
 
 - name: Create .gitignore if not exist
-  file:
+  ansible.builtin.file:
     path: "{{ playbook_dir }}/.gitignore"
     state: touch
-  when: not gitignore_check.stat.exists
+  when:
+  - not molecule_testing  | default(false)
+  - not gitignore_check.stat.exists
   delegate_to: localhost
 
-
 - name: Add needed lines to .gitignore
-  blockinfile:
-    path:
-    block: | 
-      # Added by tsukatsuki
+  ansible.builtin.blockinfile:
+    path: "{{ playbook_dir }}/.gitignore"
+    block: |
       key/
       .ansible/
     create: yes
+    marker: "# {mark} Tsukatsuki Managed Block"
   delegate_to: localhost
+  when: not molecule_testing | default(false)

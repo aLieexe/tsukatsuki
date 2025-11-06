@@ -1,0 +1,46 @@
+- name: Create a user with sudo privileges
+  ansible.builtin.user:
+    name: "{{ setup_user }}"
+    create_home: yes
+    generate_ssh_key: yes
+    ssh_key_bits: 2048
+    ssh_key_file: .ssh/id_rsa
+    shell: /bin/bash
+    groups: sudo
+    append: yes
+  register: user_info
+
+- name: Show what was returned
+  debug:
+    var: user_info
+
+- name: Set authorized key taken from file
+  ansible.posix.authorized_key:
+    user: "{{ setup_user }}"
+    state: present
+    key: "{{ user_info.ssh_public_key }}"
+
+- name: Fetch private key to manager
+  ansible.builtin.fetch:
+    src: "/home/{{ setup_user }}/.ssh/id_rsa"
+    dest: "{{ playbook_dir }}/key/{{ setup_user }}"
+    flat: yes
+
+- name: Fetch public key to manager
+  ansible.builtin.fetch:
+    src: "/home/{{ setup_user }}/.ssh/id_rsa.pub"
+    dest: "{{ playbook_dir }}/key/{{ setup_user }}.pub"
+    flat: yes
+
+- name: Set permissions on fetched private key
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/key/{{ setup_user }}"
+    mode: '0600'
+  delegate_to: localhost
+  when: not molecule_testing  | default(false)
+
+- name: Set permissions on fetched public key
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/key/{{ setup_user }}.pub"
+    mode: '0644'
+  delegate_to: localhost

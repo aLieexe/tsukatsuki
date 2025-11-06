@@ -1,0 +1,8 @@
+- name: Apt update
+  ansible.builtin.apt:
+    update_cache: yes
+
+- name: Install all the packages neeeded using apt
+  ansible.builtin.apt:
+    pkg: "{{ package_needed }}"
+    state: present

@@ -1,0 +1,22 @@
+- name: Generate SSH key if it doesn't exist
+  community.crypto.openssh_keypair:
+    path: "{{ playbook_dir }}/key/{{ ansible_user }}"
+    type: rsa
+    comment: "ansible-generated"
+    size: 2048
+  delegate_to: localhost
+  run_once: true
+
+- name: Fix SSH key ownership
+  file:
+    path: "{{ playbook_dir }}/key/{{ ansible_user }}"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+  delegate_to: localhost
+  run_once: true
+
+- name: Deploy the generated public key to remote hosts
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    state: present
+    key: "{{ lookup('file', playbook_dir + '/key/' + ansible_user + '.pub') }}"

@@ -1,0 +1,76 @@
+# SSH server listening address and port
+Port {{ ssh_port }} 
+#ListenAddress 0.0.0.0
+#ListenAddress ::
+
+# only listen to IPv4
+#AddressFamily inet
+
+# only listen to IPv6
+#AddressFamily inet6
+
+
+AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
+AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
+AcceptEnv LC_IDENTIFICATION LC_ALL LANGUAGE
+AcceptEnv XMODIFIERS
+
+# look 9/10 time we aint gonna need this
+# turn it on if want to use the server as a SSH Bastion / to jump host or whtever
+AllowAgentForwarding no
+
+# Disable other kind of forwarding as usually not needed
+AllowTcpForwarding no
+AllowStreamLocalForwarding no
+DisableForwarding yes
+
+# Suppress MOTD (Message of The Day), optional tbh
+PrintMotd no
+
+# Disable X11 forwarding since it is not necessary
+X11Forwarding no
+
+
+# Enable / Disable these two as needed
+# Permit only specific user to login
+#AllowUsers alie lies 
+
+# Permit only users within the specified groups to login
+#AllowGroups dev ops
+
+
+
+
+
+
+# This force login to ONLY use public key, disable all other fallback
+AuthenticationMethods publickey
+PasswordAuthentication no
+UsePAM no
+
+# Most systems don't have this configured, so just turn it off
+ChallengeResponseAuthentication no
+
+# Prevent brute force attacks
+MaxAuthTries 3
+
+# Prevent empty password, avoids unintentional open accounts
+PermitEmptyPasswords no
+
+# Prevent root from being logged in via SSH
+PermitRootLogin no
+
+# Enable pubkey authentication
+PubkeyAuthentication yes
+
+
+
+
+# Enforce server to only use SSH protocol version 2
+Protocol 2
+
+# let ClientAliveInterval handle keepalive
+TCPKeepAlive no
+
+# Prevents DNS spoofing issues.
+UseDNS no
