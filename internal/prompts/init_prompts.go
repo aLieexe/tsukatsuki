@@ -61,15 +61,15 @@ func InitializeSelectionsSchema() *Selections {
 				Headers: "Do you want to setup github actions ",
 				Options: []Item{
 					{
-						Title:       "None",
-						Description: "No github workflow file will be generated",
-						Value:       "none",
-					},
-					{
-						Title:       "CI Only",
-						Description: "No need for any kind of configuration",
+						Title:       "CI",
+						Description: "Continous Integrations Github Actions Workflows",
 						Value:       "actions-ci",
 					},
+					// {
+					// 	Title:       "CD",
+					// 	Description: "Continous Deployments automatically pull from github then built it in server",
+					// 	Value:       "actions-cd",
+					// },
 				},
 			},
 		},

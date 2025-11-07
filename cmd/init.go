@@ -29,11 +29,11 @@ type UserInput struct {
 	Branch         *textinput.Output
 	SetupUser      *textinput.Output
 
-	Webserver     *singleselect.Output
-	Runtime       *singleselect.Output
-	GithubActions *singleselect.Output
+	Webserver *singleselect.Output
+	Runtime   *singleselect.Output
 
-	Services *multiselect.Output
+	Services      *multiselect.Output
+	GithubActions *multiselect.Output
 }
 
 // initCmd represents the init command
@@ -70,11 +70,11 @@ func runInitCommand(cmd *cobra.Command) {
 		Branch:         &textinput.Output{},
 		SetupUser:      &textinput.Output{},
 
-		Webserver:     &singleselect.Output{},
-		Runtime:       &singleselect.Output{},
-		GithubActions: &singleselect.Output{},
+		Webserver: &singleselect.Output{},
+		Runtime:   &singleselect.Output{},
 
-		Services: &multiselect.Output{},
+		Services:      &multiselect.Output{},
+		GithubActions: &multiselect.Output{},
 	}
 
 	selectionSchema := prompts.InitializeSelectionsSchema()
@@ -121,7 +121,7 @@ func runInitCommand(cmd *cobra.Command) {
 		log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
 		os.Exit(1)
 	}
-	cfg.AppImage = appImg
+	cfg.BuildImage = appImg
 
 	// ServerIP Question
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", cfg, utils.IpValidator))
@@ -191,23 +191,17 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 
 	// actions question
-	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], cfg))
+	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
+	for _, actions := range userInput.GithubActions.Value {
 
-	cfg.GithubActions = userInput.GithubActions.Value
-	cfg.ExitCLI(teaProgram)
-	if cfg.GithubActions != "none" {
-		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.Branch, "What branch do you want to use to trigger Github Actions", "main", cfg, nil))
-		if _, err := teaProgram.Run(); err != nil {
-			log.Error(fmt.Sprintf("error receiving input: %s", err))
-			os.Exit(1)
+		action := services.GithubActions{
+			Type: actions,
 		}
-
-		cfg.Branch = userInput.Branch.Value
-		cfg.ExitCLI(teaProgram)
+		cfg.GithubActions = append(cfg.GithubActions, action)
 	}
 
 	err = cfg.SaveConfigToFile()

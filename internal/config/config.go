@@ -10,15 +10,16 @@ import (
 
 type AppConfigYaml struct {
 	Project struct {
-		Name        string `yaml:"name"`
-		Port        int    `yaml:"port"`
-		Runtime     string `yaml:"runtime"`
-		DockerImage string `yaml:"docker_image"`
+		Name       string `yaml:"name"`
+		Port       int    `yaml:"port"`
+		Runtime    string `yaml:"runtime"`
+		BuildImage string `yaml:"build_image"`
 	} `yaml:"project"`
 
 	Server struct {
 		IP        string `yaml:"ip"`
 		SetupUser string `yaml:"setup_user"`
+		SSHPort   string `yaml:"ssh_port"`
 	} `yaml:"server"`
 
 	Webserver struct {
@@ -38,9 +39,8 @@ type AppConfigYaml struct {
 		OutputDir  string `yaml:"output_dir"`
 	} `yaml:"path"`
 
-	GithubActions struct {
-		Mode   string `yaml:"mode"`
-		Branch string `yaml:"branch"`
+	GithubActions []struct {
+		Type string `yaml:"type"`
 	} `yaml:"github_actions"`
 }
 

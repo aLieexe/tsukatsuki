@@ -16,6 +16,10 @@ type Service struct {
 	DockerImage string
 }
 
+type GithubActions struct {
+	Type string
+}
+
 func GetDefaultImageMap() map[string]string {
 	imageMap := map[string]string{
 		"go": "golang:1.24.4-bookworm",
@@ -34,10 +38,11 @@ type AppConfig struct {
 	AppPort     int
 	Runtime     string
 	MainPath    string
-	AppImage    string
+	BuildImage  string
 
 	ServerIP  string
 	SetupUser string
+	SSHPort   string
 
 	AppSiteAddress string
 	Webserver      string
@@ -45,8 +50,7 @@ type AppConfig struct {
 
 	Services []Service
 
-	Branch        string
-	GithubActions string
+	GithubActions []GithubActions
 
 	LocalPath  string
 	RemotePath string
@@ -61,7 +65,7 @@ func NewAppConfig() *AppConfig {
 		AppPort:     5050,
 		Runtime:     "go",
 		MainPath:    utils.GetMainFileLocation(),
-		AppImage:    "latest",
+		BuildImage:  "latest",
 
 		ServerIP:  "127.0.0.1",
 		SetupUser: "user1",
@@ -72,8 +76,7 @@ func NewAppConfig() *AppConfig {
 
 		Services: nil,
 
-		Branch:        "main",
-		GithubActions: "none",
+		GithubActions: nil,
 
 		LocalPath: utils.GetAbsolutePath(),
 		OutputDir: "deploy",
@@ -92,7 +95,7 @@ func (app *AppConfig) SaveConfigToFile() error {
 	cfg.Project.Name = app.ProjectName
 	cfg.Project.Port = app.AppPort
 	cfg.Project.Runtime = app.Runtime
-	cfg.Project.DockerImage = app.AppImage
+	cfg.Project.BuildImage = app.BuildImage
 
 	cfg.Server.IP = app.ServerIP
 	cfg.Server.SetupUser = app.SetupUser
@@ -111,8 +114,13 @@ func (app *AppConfig) SaveConfigToFile() error {
 		})
 	}
 
-	cfg.GithubActions.Mode = app.GithubActions
-	cfg.GithubActions.Branch = app.Branch
+	for _, actions := range app.GithubActions {
+		cfg.GithubActions = append(cfg.GithubActions, struct {
+			Type string `yaml:"type"`
+		}{
+			Type: actions.Type,
+		})
+	}
 
 	cfg.Path.LocalPath = app.LocalPath
 	cfg.Path.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", app.ProjectName)
@@ -130,11 +138,18 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 		})
 	}
 
+	var githubActions []GithubActions
+	for _, actions := range yamlConfig.GithubActions {
+		githubActions = append(githubActions, GithubActions{
+			Type: actions.Type,
+		})
+	}
+
 	cfg := &AppConfig{
 		ProjectName: yamlConfig.Project.Name,
 		AppPort:     yamlConfig.Project.Port,
 		Runtime:     yamlConfig.Project.Runtime,
-		AppImage:    yamlConfig.Project.DockerImage,
+		BuildImage:  yamlConfig.Project.BuildImage,
 
 		MainPath: utils.GetMainFileLocation(),
 
@@ -147,12 +162,11 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 
 		Services: services,
 
+		GithubActions: githubActions,
+
 		LocalPath:  yamlConfig.Path.LocalPath,
 		RemotePath: yamlConfig.Path.RemotePath,
 		OutputDir:  yamlConfig.Path.OutputDir,
-
-		Branch:        yamlConfig.GithubActions.Branch,
-		GithubActions: yamlConfig.GithubActions.Mode,
 	}
 	return cfg
 }
