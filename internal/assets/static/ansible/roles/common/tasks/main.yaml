@@ -117,7 +117,7 @@
   ansible.builtin.blockinfile:
     path: "{{ playbook_dir }}/.gitignore"
     block: |
-      key/
+      key
       .ansible/
     create: yes
     marker: "# {mark} Tsukatsuki Managed Block"
