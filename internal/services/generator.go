@@ -27,7 +27,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 			return app.GenerateCompose()
 		}},
 		{"ansible files generation", func() error {
-			return app.GenerateAnsibleFiles([]string{app.Webserver})
+			return app.GenerateAnsibleFiles()
 		}},
 		{"configuration files generation", func() error {
 			return app.GenerateConfigurationFiles([]string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"})
@@ -70,7 +70,7 @@ func (app *AppConfig) GenerateActionsFiles() error {
 	return nil
 }
 
-func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
+func (app *AppConfig) GenerateAnsibleFiles() error {
 	ansibleSetupCode := "ansible-setup"
 	ansibleInventoryCode := "ansible-inventory"
 	ansibleVarsCode := "ansible-vars"
@@ -83,7 +83,11 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 
 	playbookData.Roles = append(playbookData.Roles, "common")
 	playbookData.Roles = append(playbookData.Roles, "docker")
-	playbookData.Roles = append(playbookData.Roles, serviceList...)
+	playbookData.Roles = append(playbookData.Roles, app.Webserver)
+
+	if app.Security {
+		playbookData.Roles = append(playbookData.Roles, "security")
+	}
 
 	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
@@ -105,21 +109,22 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 		return fmt.Errorf("generating template %s: %w", ansibleVarsCode, err)
 	}
 
-	// TODO: Fix this, implement a provider for the static files
-	outDir := filepath.Join(app.OutputDir, "ansible")
-	// Copy the file that we wont need to template
-	err = copyFile("static/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
+	staticProvider := assets.NewStaticProvider(app.OutputDir)
+	staticFile := staticProvider.StaticFile["ansible-config"]
+	err = copyFile(staticFile.StaticFilePath, staticFile.OutputPath)
 	if err != nil {
 		return err
 	}
 
-	err = copyFile("static/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
+	staticFile = staticProvider.StaticFile["ansible-deploy"]
+	err = copyFile(staticFile.StaticFilePath, staticFile.OutputPath)
 	if err != nil {
 		return err
 	}
 
+	// Roles
 	rolesSrcDir := "static/ansible/roles"
-	rolesDstDir := filepath.Join(outDir, "/roles")
+	rolesDstDir := filepath.Join(app.OutputDir, "ansible", "/roles")
 
 	playbookData.Roles = append(playbookData.Roles, "deployment")
 
