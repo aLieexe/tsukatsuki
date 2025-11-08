@@ -15,7 +15,7 @@ type Output struct {
 }
 
 type model struct {
-	promptSchema prompts.SelectionSchema
+	promptSchema prompts.ChoiceQuestion
 
 	cursor int
 	choice []string
@@ -25,7 +25,7 @@ type model struct {
 	err  error
 }
 
-func InitializeMultiSelectModel(output *Output, promptSchema prompts.SelectionSchema, appConfig *services.AppConfig) model {
+func InitializeMultiSelectModel(output *Output, promptSchema prompts.ChoiceQuestion, appConfig *services.AppConfig) model {
 	model := model{
 		promptSchema: promptSchema,
 
@@ -54,7 +54,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case " ":
-			currentOptions := m.promptSchema.Options[m.cursor]
+			currentOptions := m.promptSchema.Choices[m.cursor]
 			if slices.Contains(m.choice, currentOptions.Value) {
 				for i, choice := range m.choice {
 					if choice == currentOptions.Value {
@@ -69,14 +69,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "down", "j":
 			m.cursor++
-			if m.cursor >= len(m.promptSchema.Options) {
+			if m.cursor >= len(m.promptSchema.Choices) {
 				m.cursor = 0
 			}
 
 		case "up", "k":
 			m.cursor--
 			if m.cursor < 0 {
-				m.cursor = len(m.promptSchema.Options) - 1
+				m.cursor = len(m.promptSchema.Choices) - 1
 			}
 		}
 	}
@@ -86,15 +86,15 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := strings.Builder{}
-
-	s.WriteString("\n")
 	s.WriteString(m.promptSchema.Headers)
-
 	s.WriteString("\n")
 
-	for i := 0; i < len(m.promptSchema.Options); i++ {
+	s.WriteString(m.promptSchema.Description)
+	s.WriteString("\n")
 
-		currentOptions := m.promptSchema.Options[i]
+	for i := 0; i < len(m.promptSchema.Choices); i++ {
+
+		currentOptions := m.promptSchema.Choices[i]
 
 		if m.cursor == i {
 			// on hover
@@ -113,8 +113,9 @@ func (m model) View() string {
 		s.WriteString(currentOptions.Description)
 		s.WriteString("\n")
 		s.WriteString("\n")
+
 	}
-	s.WriteString("\n(press q to quit, press space to select choices, press enter to confirm)\n")
+	s.WriteString("(press q to quit, press space to select choices, press enter to confirm)\n")
 
 	return s.String()
 }

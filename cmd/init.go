@@ -26,11 +26,12 @@ type UserInput struct {
 	ServerIP       *textinput.Output
 	AppSiteAddress *textinput.Output
 	AppPort        *textinput.Output
-	Branch         *textinput.Output
 	SetupUser      *textinput.Output
+	SSHPort        *textinput.Output
 
 	Webserver *singleselect.Output
 	Runtime   *singleselect.Output
+	Security  *singleselect.Output
 
 	Services      *multiselect.Output
 	GithubActions *multiselect.Output
@@ -67,21 +68,23 @@ func runInitCommand(cmd *cobra.Command) {
 		AppPort:        &textinput.Output{},
 		ServerIP:       &textinput.Output{},
 		AppSiteAddress: &textinput.Output{},
-		Branch:         &textinput.Output{},
 		SetupUser:      &textinput.Output{},
+		SSHPort:        &textinput.Output{},
 
 		Webserver: &singleselect.Output{},
 		Runtime:   &singleselect.Output{},
+		Security:  &singleselect.Output{},
 
 		Services:      &multiselect.Output{},
 		GithubActions: &multiselect.Output{},
 	}
 
-	selectionSchema := prompts.InitializeSelectionsSchema()
+	selectionSchema := prompts.NewSelectionsSchema()
+	questionSchema := prompts.NewQuestionSchema()
 	imageMap := services.GetDefaultImageMap()
 
 	// AppName Question
-	teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, "What is your app name", utils.GetProjectDirectory(), cfg, nil))
+	teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, questionSchema.Questions["app-name"], cfg, nil))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -91,7 +94,7 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.ExitCLI(teaProgram)
 
 	// AppPort Question
-	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, "What is your app Port", "6969", cfg, utils.PortValidator))
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, questionSchema.Questions["app-port"], cfg, utils.PortValidator))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -105,16 +108,13 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.ExitCLI(teaProgram)
 
 	// run time question
-	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Flow["runtime"], cfg))
+	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Questions["runtime"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 	cfg.Runtime = userInput.Runtime.Value
 	cfg.ExitCLI(teaProgram)
-
-	fmt.Println()
-	fmt.Println()
 
 	appImg, exists := imageMap[userInput.Runtime.Value]
 	if !exists {
@@ -124,7 +124,7 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.BuildImage = appImg
 
 	// ServerIP Question
-	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, "What is your server IP", "127.0.0.1", cfg, utils.IpValidator))
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, questionSchema.Questions["server-ip"], cfg, utils.IpValidator))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -134,7 +134,7 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.ExitCLI(teaProgram)
 
 	// Setup User
-	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SetupUser, "Please provide a sudo user that is not root", "user1", cfg, nil))
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SetupUser, questionSchema.Questions["server-user"], cfg, nil))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -143,8 +143,32 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.SetupUser = userInput.SetupUser.Value
 	cfg.ExitCLI(teaProgram)
 
+	// Security
+	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Security, selectionSchema.Questions["security"], cfg))
+	if _, err := teaProgram.Run(); err != nil {
+		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		os.Exit(1)
+	}
+	cfg.ExitCLI(teaProgram)
+
+	if userInput.Security.Value == "true" {
+		cfg.Security = true
+		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SSHPort, questionSchema.Questions["server-port"], cfg, utils.PortValidator))
+		if _, err := teaProgram.Run(); err != nil {
+			log.Error(fmt.Sprintf("error receiving input: %s", err))
+			os.Exit(1)
+		}
+
+		converted, err := strconv.Atoi(userInput.SSHPort.Value)
+		if err != nil {
+			log.Warn("port is invalid, defaulted to 22")
+		}
+		cfg.SSHPort = converted
+		cfg.ExitCLI(teaProgram)
+	}
+
 	// AppSiteAddress
-	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, "What is the endpoint that will be used for this App (enter to use ip)", "placeholder.com", cfg, utils.SiteAddressValidator))
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, questionSchema.Questions["webserver-endpoint"], cfg, utils.SiteAddressValidator))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -154,7 +178,7 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.ExitCLI(teaProgram)
 
 	// webserver single select question
-	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Flow["webserver"], cfg))
+	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Questions["webserver"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -169,7 +193,7 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 
 	// Services Multi-choice question
-	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.Services, selectionSchema.Flow["services"], cfg))
+	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.Services, selectionSchema.Questions["services"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -191,7 +215,7 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 
 	// actions question
-	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.GithubActions, selectionSchema.Flow["actions"], cfg))
+	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.GithubActions, selectionSchema.Questions["actions"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		log.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)

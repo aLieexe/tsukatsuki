@@ -19,7 +19,8 @@ type AppConfigYaml struct {
 	Server struct {
 		IP        string `yaml:"ip"`
 		SetupUser string `yaml:"setup_user"`
-		SSHPort   string `yaml:"ssh_port"`
+		SSHPort   int    `yaml:"ssh_port"`
+		Security  bool   `yaml:"security"`
 	} `yaml:"server"`
 
 	Webserver struct {

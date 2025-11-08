@@ -42,7 +42,8 @@ type AppConfig struct {
 
 	ServerIP  string
 	SetupUser string
-	SSHPort   string
+	SSHPort   int
+	Security  bool
 
 	AppSiteAddress string
 	Webserver      string
@@ -69,6 +70,8 @@ func NewAppConfig() *AppConfig {
 
 		ServerIP:  "127.0.0.1",
 		SetupUser: "user1",
+		SSHPort:   2222,
+		Security:  false,
 
 		AppSiteAddress: "placeholder.com",
 		Webserver:      "caddy",
@@ -99,6 +102,8 @@ func (app *AppConfig) SaveConfigToFile() error {
 
 	cfg.Server.IP = app.ServerIP
 	cfg.Server.SetupUser = app.SetupUser
+	cfg.Server.SSHPort = app.SSHPort
+	cfg.Server.Security = app.Security
 
 	cfg.Webserver.Domain = app.AppSiteAddress
 	cfg.Webserver.Type = app.Webserver
@@ -155,6 +160,8 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 
 		ServerIP:  yamlConfig.Server.IP,
 		SetupUser: yamlConfig.Server.SetupUser,
+		SSHPort:   yamlConfig.Server.SSHPort,
+		Security:  yamlConfig.Server.Security,
 
 		Webserver:      yamlConfig.Webserver.Type,
 		AppSiteAddress: yamlConfig.Webserver.Domain,

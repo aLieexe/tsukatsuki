@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
+	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
 )
 
@@ -26,19 +27,19 @@ type model struct {
 	validator func(string) error
 }
 
-func InitializeTextinputModel(output *Output, header string, placeholder string, appConfig *services.AppConfig, validator func(string) error) model {
+func InitializeTextinputModel(output *Output, question prompts.Question, appConfig *services.AppConfig, validator func(string) error) model {
 	ti := textinput.New()
 	ti.Focus() // focus so it’s ready to type
 	ti.CharLimit = 100
-	ti.Width = 20
-	ti.Placeholder = placeholder
+	ti.Width = 40
+	ti.Placeholder = question.Placeholder
 
 	return model{
 		textInput: ti,
 		err:       nil,
 		output:    output,
 		exit:      &appConfig.Exit,
-		header:    header,
+		header:    question.Header,
 		validator: validator, // set it
 	}
 }
