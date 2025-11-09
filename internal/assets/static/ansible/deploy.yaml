@@ -1,3 +1,17 @@
+- name: Prepare hosts with correct SSH port
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Update existing hosts with correct SSH port
+      ansible.builtin.add_host:
+        name: "{{ item }}"
+        ansible_host: "{{ hostvars[item].ansible_host }}"
+        ansible_user: "{{ hostvars[item].ansible_user }}"
+        ansible_port: "{{ ssh_port }}"
+        ansible_ssh_private_key_file: "{{ hostvars[item].ansible_ssh_private_key_file | default(omit) }}"
+        groups: deploy
+      loop: "{{ groups['deploy'] }}"
+
 - hosts: deploy
   become: false
   roles:

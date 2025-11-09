@@ -1,4 +1,4 @@
-ssh_port: 2222
+new_ssh_port: 2222
 
 package_needed: 
   - openssh-server

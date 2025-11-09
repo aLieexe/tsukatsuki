@@ -83,7 +83,6 @@ func (app *AppConfig) GenerateAnsibleFiles() error {
 
 	playbookData.Roles = append(playbookData.Roles, "common")
 	playbookData.Roles = append(playbookData.Roles, "docker")
-	playbookData.Roles = append(playbookData.Roles, app.Webserver)
 
 	if app.Security {
 		playbookData.Roles = append(playbookData.Roles, "security")

@@ -59,7 +59,16 @@
     ssh_key_file: .ssh/id_rsa
     # We need this to give it actual shell 
     shell: /bin/bash
+    # unlock account so SSH can use pubkey auth. JUST IN CASE Pubkey only is enabled, otherwise account will be locked
+    password_lock: false
+    password: "!"
   register: user_info
+
+- name: Ensure the deploy user account is unlocked
+  ansible.builtin.command:
+    cmd: "passwd -d {{ hostvars['deploy_user'].ansible_user }}"
+  when: not molecule_testing  | default(false)
+
 
 - name: Show what was returned
   debug:

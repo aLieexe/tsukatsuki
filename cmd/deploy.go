@@ -38,11 +38,18 @@ var deployCmd = &cobra.Command{
 			}
 		}
 
-		cfg := services.NewAppConfigFromYaml(yamlConfig)
+		app := services.NewAppConfigFromYaml(yamlConfig)
 
 		log.Info("Attempting to run ansible server setup with inventory.ini")
 
-		err = services.ExecAnsible(log, filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml")
+		port, err := services.ProbeSSH(app.ServerIP, []int{app.SSHPort, 22})
+		if err != nil {
+			log.Warn(fmt.Sprintf("Failed to find open SSH Port: %s", err))
+		}
+
+		log.Info(fmt.Sprintf("Using SSH port %d for connection", port))
+
+		err = services.ExecAnsible(log, filepath.Join(app.OutputDir, "ansible"), "setup.yaml", port)
 		if err != nil {
 			log.Warn(fmt.Sprintf("Failed executing using inventory.ini: %s", err))
 		}
@@ -50,14 +57,14 @@ var deployCmd = &cobra.Command{
 		log.Info("In order to continue you must provide us with a user with an admin priviliges")
 		var password textinput.Output
 
-		teaProgram := tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "12345678", cfg))
+		teaProgram := tea.NewProgram(textinput.InitializePasswordInputModel(&password, "what is the root password of your server", "12345678", app))
 		_, err = teaProgram.Run()
 		if err != nil {
 			log.Error(fmt.Sprintf("failed to receive input %s: ", err))
 			os.Exit(1)
 		}
 
-		err = services.ExecAnsibleWithPassword(log, filepath.Join(cfg.OutputDir, "ansible"), "setup.yaml", password.Value)
+		err = services.ExecAnsibleWithPassword(log, filepath.Join(app.OutputDir, "ansible"), "setup.yaml", password.Value, port)
 		if err != nil {
 			log.Error(fmt.Sprintf("failed to execute: %s", err))
 			os.Exit(1)
@@ -65,7 +72,13 @@ var deployCmd = &cobra.Command{
 
 		log.Info("Deploying application")
 
-		err = services.ExecAnsible(log, filepath.Join(cfg.OutputDir, "ansible"), "deploy.yaml")
+		port, err = services.ProbeSSH(app.ServerIP, []int{app.SSHPort, 22})
+		if err != nil {
+			log.Warn(fmt.Sprintf("Failed to find open SSH Port: %s", err))
+		}
+
+		log.Info(fmt.Sprintf("Using SSH port %d for connection", port))
+		err = services.ExecAnsible(log, filepath.Join(app.OutputDir, "ansible"), "deploy.yaml", port)
 		if err != nil {
 			log.Error(fmt.Sprintf("failed to execute: %s", err))
 			os.Exit(1)

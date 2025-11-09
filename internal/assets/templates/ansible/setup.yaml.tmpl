@@ -1,6 +1,30 @@
+- name: Prepare hosts with correct SSH port
+  hosts: localhost
+  gather_facts: false
+  tasks:
+    - name: Update existing hosts with correct SSH port
+      ansible.builtin.add_host:
+        name: "{{ "{{ item }}" }}"
+        ansible_user: "{{ "{{ hostvars[item].ansible_user }}" }}"
+        ansible_host: "{{ "{{ hostvars[item].ansible_host }}" }}"
+        ansible_port: "{{ "{{ ssh_port }}" }}" 
+        ansible_ssh_private_key_file: "{{ "{{ hostvars[item].ansible_ssh_private_key_file | default(omit) }}" }}"
+        groups: setup
+      loop: "{{ "{{ groups['setup'] }}" }}"
+
+
 - hosts: setup
   become: true
   become_method: sudo
+  pre_tasks:
+    - name: Set ansible_port from ssh_port if given
+      ansible.builtin.set_fact:
+        ansible_port:  "{{ "{{ ssh_port }}" }}"
+      when: ssh_port is defined
+
+    - name: Reconnect to apply new SSH port
+      meta: reset_connection
+      when: ssh_port is defined
   roles:
   {{range .Roles}}  - {{.}}
   {{end}}

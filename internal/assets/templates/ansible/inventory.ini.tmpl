@@ -1,5 +1,5 @@
 [setup]
-setup_user ansible_user={{ .SetupUser }} ansible_host={{ .ServerIP }} 
+setup_user ansible_user={{ .SetupUser }} ansible_host={{ .ServerIP }} ansible_ssh_private_key_file=./key/{{ .SetupUser }}
 
 [deploy]
-deploy_user ansible_user=tsukatsuki ansible_host={{ .ServerIP }}
+deploy_user ansible_user=tsukatsuki ansible_host={{ .ServerIP }} ansible_ssh_private_key_file=./key/tsukatsuki

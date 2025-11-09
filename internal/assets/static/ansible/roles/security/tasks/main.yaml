@@ -83,7 +83,7 @@
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
   loop:
-    - { rule: 'allow', port: "{{ ssh_port }}", proto: 'tcp' }   # SSH
+    - { rule: 'allow', port: "{{ new_ssh_port }}", proto: 'tcp' }   # SSH
     - { rule: 'allow', port: 80, proto: 'tcp' }   # HTTP
     - { rule: 'allow', port: 443, proto: 'tcp' }   # HTTPS
     - { rule: 'allow', port: 123, proto: 'udp' }  # NTP
@@ -101,9 +101,21 @@
     - { direction: outgoing, policy: allow }
     - { direction: incoming, policy: deny }
 
-- name: Change ssh port to 8888
+
+- name: Debug current ansible_port
+  ansible.builtin.debug:
+    var: ansible_port
+
+- name: Update ansible_port for this host
   ansible.builtin.set_fact:
-    ansible_port: 2222
+    ansible_port: "{{ new_ssh_port }}"
+
+- name: Reconnect to host with new port
+  ansible.builtin.meta: reset_connection
+
+- name: Debug current ansible_port
+  ansible.builtin.debug:
+    var: ansible_port
 
 
 
