@@ -72,6 +72,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"ansible-setup":     "ansible/setup.yaml.tmpl",
 		"ansible-vars":      "ansible/all.yaml.tmpl",
 		"ansible-inventory": "ansible/inventory.ini.tmpl",
+		"ansible-molecule":  "ansible/converge.yml.tmpl",
 
 		"go-dockerfile": "files/Dockerfile.tmpl",
 
@@ -88,6 +89,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"ansible-setup":     "setup.yaml",
 		"ansible-vars":      "all.yaml",
 		"ansible-inventory": "inventory.ini",
+		"ansible-molecule":  "converge.yml",
 
 		"go-dockerfile": "Dockerfile",
 
@@ -103,6 +105,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"ansible-setup":     filepath.Join(generatedDir, "ansible"),
 		"ansible-vars":      filepath.Join(generatedDir, "ansible/group_vars"),
 		"ansible-inventory": filepath.Join(generatedDir, "ansible"),
+		"ansible-molecule":  filepath.Join(generatedDir, "ansible/molecule/default"),
 
 		"go-dockerfile": filepath.Join(generatedDir, "conf"),
 

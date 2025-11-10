@@ -1,0 +1,9 @@
+---
+- name: Converge
+  hosts: setup
+  gather_facts: true
+  vars_files: 
+  - ../../group_vars/all.yaml
+  roles: 
+  {{range .Roles}}  - role: ../../roles/{{.}}
+  {{end}}

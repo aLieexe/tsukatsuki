@@ -63,11 +63,35 @@
     password_lock: false
     password: "!"
   register: user_info
+  when: not molecule_testing  | default(false)
+
+
+# - name: Check password status of deploy user
+#   ansible.builtin.command:
+#     cmd: "passwd -S {{ hostvars['deploy_user'].ansible_user }}"
+#   register: passwd_status
+#   changed_when: false
+
+# - name: Debug password status
+#   ansible.builtin.debug:
+#     msg: "Password status: {{ passwd_status.stdout }}"
+
 
 - name: Ensure the deploy user account is unlocked
   ansible.builtin.command:
     cmd: "passwd -d {{ hostvars['deploy_user'].ansible_user }}"
   when: not molecule_testing  | default(false)
+
+
+# - name: Check password status of deploy user
+#   ansible.builtin.command:
+#     cmd: "passwd -S {{ hostvars['deploy_user'].ansible_user }}"
+#   register: passwd_status
+#   changed_when: false
+
+# - name: Debug password status
+#   ansible.builtin.debug:
+#     msg: "Password status: {{ passwd_status.stdout }}"
 
 
 - name: Show what was returned

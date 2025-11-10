@@ -71,9 +71,12 @@ func (app *AppConfig) GenerateActionsFiles() error {
 }
 
 func (app *AppConfig) GenerateAnsibleFiles() error {
-	ansibleSetupCode := "ansible-setup"
-	ansibleInventoryCode := "ansible-inventory"
-	ansibleVarsCode := "ansible-vars"
+	const ansibleSetupCode = "ansible-setup"
+	const ansibleInventoryCode = "ansible-inventory"
+	const ansibleVarsCode = "ansible-vars"
+	const ansibleMolecule = "ansible-molecule"
+
+	ansibleStaticDir := "static/ansible"
 
 	playbookData := struct {
 		Roles []string
@@ -108,6 +111,11 @@ func (app *AppConfig) GenerateAnsibleFiles() error {
 		return fmt.Errorf("generating template %s: %w", ansibleVarsCode, err)
 	}
 
+	fileTemplate = templateProvider.GetFileTemplates()[ansibleMolecule]
+	if err := generateStandardTemplate(&fileTemplate, ansibleMolecule, playbookData); err != nil {
+		return fmt.Errorf("generating template %s: %w", ansibleMolecule, err)
+	}
+
 	staticProvider := assets.NewStaticProvider(app.OutputDir)
 	staticFile := staticProvider.StaticFile["ansible-config"]
 	err = copyFile(staticFile.StaticFilePath, staticFile.OutputPath)
@@ -122,7 +130,7 @@ func (app *AppConfig) GenerateAnsibleFiles() error {
 	}
 
 	// Roles
-	rolesSrcDir := "static/ansible/roles"
+	rolesSrcDir := filepath.Join(ansibleStaticDir, "/roles")
 	rolesDstDir := filepath.Join(app.OutputDir, "ansible", "/roles")
 
 	playbookData.Roles = append(playbookData.Roles, "deployment")
@@ -132,8 +140,17 @@ func (app *AppConfig) GenerateAnsibleFiles() error {
 		dst := filepath.Join(rolesDstDir, role)
 
 		if err := copyDir(src, dst); err != nil {
-			return err
+			return fmt.Errorf("copying %s, in %s to %s: %w", role, src, dst, err)
 		}
+	}
+
+	// Molecule
+	moleculeSrcDir := filepath.Join(ansibleStaticDir, "/molecule")
+	moleculeDstDir := filepath.Join(app.OutputDir, "ansible", "molecule")
+
+	err = copyDir(moleculeSrcDir, moleculeDstDir)
+	if err != nil {
+		return fmt.Errorf("copying molecule, in %s to %s: %w", moleculeSrcDir, moleculeDstDir, err)
 	}
 
 	return nil
