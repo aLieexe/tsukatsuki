@@ -15,7 +15,7 @@ import (
 	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
-var LevelStyleMap = map[slog.Level]lipgloss.Style{
+var levelStyleMap = map[slog.Level]lipgloss.Style{
 	slog.LevelDebug: ui.DebugStyle,
 	slog.LevelInfo:  ui.InfoStyle,
 	slog.LevelWarn:  ui.WarnStyle,
@@ -52,7 +52,7 @@ func (h *Handler) Handle(_ context.Context, r slog.Record) error {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
-	style, ok := LevelStyleMap[r.Level]
+	style, ok := levelStyleMap[r.Level]
 	if !ok {
 		style = lipgloss.NewStyle()
 	}
@@ -79,7 +79,7 @@ func (h *Handler) Handle(_ context.Context, r slog.Record) error {
 	})
 
 	output := strings.TrimRight(style.Render(r.Message+attrs.String()), " \t\r\n")
-	_, err := h.w.Write([]byte(output + "\n"))
+	_, err := io.WriteString(h.w, output+"\n")
 	return err
 }
 

@@ -1,1 +1,4 @@
+docker_repo_url: https://download.docker.com/linux
 docker_apt_arch: "{{ 'arm64' if ansible_facts.architecture == 'aarch64' else 'armhf' if ansible_facts.architecture == 'armv7l' else 'amd64' }}"
+docker_apt_ansible_distribution: "{{ 'ubuntu' if ansible_facts.distribution in ['Pop!_OS', 'Linux Mint'] else ansible_facts.distribution }}"
+docker_apt_gpg_key: "{{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }}/gpg"

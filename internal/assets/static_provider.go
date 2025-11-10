@@ -8,8 +8,17 @@ import (
 	"path/filepath"
 )
 
-// all:static will include any hidden file / dir in static
+type StaticFile struct {
+	StaticFilePath string
+	OutputPath     string
+}
 
+type StaticProvider struct {
+	StaticFile map[string]StaticFile
+}
+
+// all:static will include any hidden file / dir in static
+//
 //go:embed all:static
 var staticFS embed.FS
 
@@ -53,4 +62,28 @@ func CopyEmbeddedFiles(src, dst string) error {
 
 	// write file to destination with appropriate permissions
 	return os.WriteFile(dst, data, 0o644)
+}
+
+func NewStaticProvider(generatedDir string) *StaticProvider {
+	staticFilePath := map[string]string{
+		"ansible-deploy": "static/ansible/deploy.yaml",
+		"ansible-config": "static/ansible/ansible.cfg",
+	}
+	outputPath := map[string]string{
+		"ansible-deploy": filepath.Join(generatedDir, "ansible", "deploy.yaml"),
+		"ansible-config": filepath.Join(generatedDir, "ansible", "ansible.cfg"),
+	}
+
+	provider := &StaticProvider{
+		StaticFile: make(map[string]StaticFile),
+	}
+	for key := range staticFilePath {
+		file := StaticFile{
+			StaticFilePath: staticFilePath[key],
+			OutputPath:     outputPath[key],
+		}
+
+		provider.StaticFile[key] = file
+	}
+	return provider
 }

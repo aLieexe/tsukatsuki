@@ -33,15 +33,15 @@ linters:
   - ineffassign # detects when assignments to existing variables are not used
   - copyloopvar # detects places where loop variables are copied (Go 1.22+)
   - rowserrcheck # checks whether Err of rows is checked successfully
-  - cyclop # checks function and package cyclomatic complexity
+  # - cyclop # checks function and package cyclomatic complexity
   # Very niche, so nuh
   # - asasalint # checks for pass []any as any in variadic func(...any)
   # - asciicheck # checks that your code does not contain non-ASCII identifiers
   settings:
-    cyclop:
+    # cyclop:
       # The maximal code complexity to report.
       # Default: 10
-      max-complexity: 25
+      # max-complexity: 25
 
     errcheck:
       # Report about not checking of errors in type assertions: `a := b.(MyStruct)`.

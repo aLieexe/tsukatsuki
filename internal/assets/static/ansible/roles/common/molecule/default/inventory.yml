@@ -1,0 +1,17 @@
+all:
+  vars: 
+    molecule_testing: true
+  children:
+    setup:
+      hosts:
+        setup_user:
+          ansible_connection: docker
+          ansible_user: root
+          ansible_host: instance
+
+    deploy:
+      hosts:
+        deploy_user:
+          ansible_connection: docker
+          ansible_user: tsukatsuki
+          ansible_host: instance

@@ -27,7 +27,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 			return app.GenerateCompose()
 		}},
 		{"ansible files generation", func() error {
-			return app.GenerateAnsibleFiles([]string{app.Webserver})
+			return app.GenerateAnsibleFiles()
 		}},
 		{"configuration files generation", func() error {
 			return app.GenerateConfigurationFiles([]string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"})
@@ -49,7 +49,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 
 // TODO: Refactor it to be able to do array, Planning on changing the github stuff into multi choice instead
 func (app *AppConfig) GenerateActionsFiles() error {
-	if app.GithubActions == "none" {
+	if app.GithubActions == nil {
 		return nil
 	}
 
@@ -58,16 +58,26 @@ func (app *AppConfig) GenerateActionsFiles() error {
 		return err
 	}
 
-	fileTemplate := templateProvider.GetFileTemplates()[fmt.Sprintf("%s-%s", app.Runtime, app.GithubActions)]
+	for _, actions := range app.GithubActions {
+		code := fmt.Sprintf("%s-%s", app.Runtime, actions.Type)
+		fileTemplate := templateProvider.GetFileTemplates()[code]
 
-	if err := generateStandardTemplate(&fileTemplate, fmt.Sprintf("%s-%s", app.Runtime, app.GithubActions), app); err != nil {
-		return err
+		if err := generateStandardTemplate(&fileTemplate, code, app); err != nil {
+			return fmt.Errorf("generating template %s: %w", code, err)
+		}
 	}
 
 	return nil
 }
 
-func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
+func (app *AppConfig) GenerateAnsibleFiles() error {
+	const ansibleSetupCode = "ansible-setup"
+	const ansibleInventoryCode = "ansible-inventory"
+	const ansibleVarsCode = "ansible-vars"
+	const ansibleMolecule = "ansible-molecule"
+
+	ansibleStaticDir := "static/ansible"
+
 	playbookData := struct {
 		Roles []string
 	}{
@@ -76,44 +86,52 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 
 	playbookData.Roles = append(playbookData.Roles, "common")
 	playbookData.Roles = append(playbookData.Roles, "docker")
-	playbookData.Roles = append(playbookData.Roles, serviceList...)
+
+	if app.Security {
+		playbookData.Roles = append(playbookData.Roles, "security")
+	}
 
 	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
 	if err != nil {
-		return err
+		return fmt.Errorf("initializing template provider %s: %w", app.OutputDir, err)
 	}
 
-	fileTemplate := templateProvider.GetFileTemplates()["ansible-setup"]
-
-	if err := generateStandardTemplate(&fileTemplate, "ansible-setup", playbookData); err != nil {
-		return err
+	fileTemplate := templateProvider.GetFileTemplates()[ansibleSetupCode]
+	if err := generateStandardTemplate(&fileTemplate, ansibleSetupCode, playbookData); err != nil {
+		return fmt.Errorf("generating template %s: %w", ansibleSetupCode, err)
 	}
 
-	fileTemplate = templateProvider.GetFileTemplates()["ansible-inventory"]
-	if err := generateStandardTemplate(&fileTemplate, "ansible-inventory", app); err != nil {
-		return err
+	fileTemplate = templateProvider.GetFileTemplates()[ansibleInventoryCode]
+	if err := generateStandardTemplate(&fileTemplate, ansibleInventoryCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", ansibleInventoryCode, err)
 	}
 
-	fileTemplate = templateProvider.GetFileTemplates()["ansible-vars"]
-	if err := generateStandardTemplate(&fileTemplate, "ansible-vars", app); err != nil {
-		return err
+	fileTemplate = templateProvider.GetFileTemplates()[ansibleVarsCode]
+	if err := generateStandardTemplate(&fileTemplate, ansibleVarsCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", ansibleVarsCode, err)
 	}
 
-	// TODO: Fix this, implement a provider for the static files
-	outDir := filepath.Join(app.OutputDir, "ansible")
-	// Copy the file that we wont need to template
-	err = copyFile("static/ansible/ansible.cfg", filepath.Join(outDir, "ansible.cfg"))
+	fileTemplate = templateProvider.GetFileTemplates()[ansibleMolecule]
+	if err := generateStandardTemplate(&fileTemplate, ansibleMolecule, playbookData); err != nil {
+		return fmt.Errorf("generating template %s: %w", ansibleMolecule, err)
+	}
+
+	staticProvider := assets.NewStaticProvider(app.OutputDir)
+	staticFile := staticProvider.StaticFile["ansible-config"]
+	err = copyFile(staticFile.StaticFilePath, staticFile.OutputPath)
 	if err != nil {
 		return err
 	}
 
-	err = copyFile("static/ansible/deploy.yaml", filepath.Join(outDir, "deploy.yaml"))
+	staticFile = staticProvider.StaticFile["ansible-deploy"]
+	err = copyFile(staticFile.StaticFilePath, staticFile.OutputPath)
 	if err != nil {
 		return err
 	}
 
-	rolesSrcDir := "static/ansible/roles"
-	rolesDstDir := filepath.Join(outDir, "/roles")
+	// Roles
+	rolesSrcDir := filepath.Join(ansibleStaticDir, "/roles")
+	rolesDstDir := filepath.Join(app.OutputDir, "ansible", "/roles")
 
 	playbookData.Roles = append(playbookData.Roles, "deployment")
 
@@ -122,8 +140,17 @@ func (app *AppConfig) GenerateAnsibleFiles(serviceList []string) error {
 		dst := filepath.Join(rolesDstDir, role)
 
 		if err := copyDir(src, dst); err != nil {
-			return err
+			return fmt.Errorf("copying %s, in %s to %s: %w", role, src, dst, err)
 		}
+	}
+
+	// Molecule
+	moleculeSrcDir := filepath.Join(ansibleStaticDir, "/molecule")
+	moleculeDstDir := filepath.Join(app.OutputDir, "ansible", "molecule")
+
+	err = copyDir(moleculeSrcDir, moleculeDstDir)
+	if err != nil {
+		return fmt.Errorf("copying molecule, in %s to %s: %w", moleculeSrcDir, moleculeDstDir, err)
 	}
 
 	return nil
@@ -138,7 +165,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 	for _, templateName := range templateNeeded {
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
 		if err := generateStandardTemplate(&fileTemplate, templateName, app); err != nil {
-			return err
+			return fmt.Errorf("generating template %s: %w", templateName, err)
 		}
 	}
 	return nil

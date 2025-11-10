@@ -1,0 +1,20 @@
+- name: Verify connection to target host
+  ansible.builtin.debug:
+    msg: "Successfully connected to {{ ansible_host }}"
+
+- name: Get system information
+  debug:
+    msg: "{{ item.name }}: {{ item.value }}"
+  with_items:
+    - { name: "Distribution", value: "{{ ansible_distribution }}" }
+    - { name: "Codename", value: "{{ ansible_distribution_release }}" }
+    - { name: "Distribution Version", value: "{{ ansible_distribution_version }}" }
+    - { name: "All IPv4 Addresses", value: "{{ ansible_all_ipv4_addresses }}" }
+    - { name: "OS Family", value: "{{ ansible_facts.os_family }}" }
+    - { name: "Current User", value: "{{ ansible_user }}" }
+    - { name: "Hostname", value: "{{ ansible_hostname }}" }
+    - { name: "Kernel Version", value: "{{ ansible_kernel }}" }
+    - { name: "Processor", value: "{{ ansible_processor }}" }
+    - { name: "Total Memory (MB)", value: "{{ ansible_memtotal_mb }}" }
+    - { name: "Architecture", value: "{{ ansible_architecture }}" }
+    - { name: "Ansible Version", value: "{{ ansible_version.full}}" }

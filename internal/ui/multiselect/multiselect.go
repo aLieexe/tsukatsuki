@@ -8,6 +8,7 @@ import (
 
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 type Output struct {
@@ -15,7 +16,7 @@ type Output struct {
 }
 
 type model struct {
-	promptSchema prompts.SelectionSchema
+	promptSchema prompts.ChoiceQuestion
 
 	cursor int
 	choice []string
@@ -25,7 +26,7 @@ type model struct {
 	err  error
 }
 
-func InitializeMultiSelectModel(output *Output, promptSchema prompts.SelectionSchema, appConfig *services.AppConfig) model {
+func InitializeMultiSelectModel(output *Output, promptSchema prompts.ChoiceQuestion, appConfig *services.AppConfig) model {
 	model := model{
 		promptSchema: promptSchema,
 
@@ -54,7 +55,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case " ":
-			currentOptions := m.promptSchema.Options[m.cursor]
+			currentOptions := m.promptSchema.Choices[m.cursor]
 			if slices.Contains(m.choice, currentOptions.Value) {
 				for i, choice := range m.choice {
 					if choice == currentOptions.Value {
@@ -69,14 +70,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "down", "j":
 			m.cursor++
-			if m.cursor >= len(m.promptSchema.Options) {
+			if m.cursor >= len(m.promptSchema.Choices) {
 				m.cursor = 0
 			}
 
 		case "up", "k":
 			m.cursor--
 			if m.cursor < 0 {
-				m.cursor = len(m.promptSchema.Options) - 1
+				m.cursor = len(m.promptSchema.Choices) - 1
 			}
 		}
 	}
@@ -87,34 +88,45 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m model) View() string {
 	s := strings.Builder{}
 
+	// header
+	s.WriteString(ui.HeaderStyle.Render(m.promptSchema.Headers))
 	s.WriteString("\n")
-	s.WriteString(m.promptSchema.Headers)
 
-	s.WriteString("\n")
+	// description
+	s.WriteString(ui.DescriptionStyle.Render(m.promptSchema.Description))
+	s.WriteString("\n\n")
 
-	for i := 0; i < len(m.promptSchema.Options); i++ {
+	// options
+	for i := 0; i < len(m.promptSchema.Choices); i++ {
+		currentOptions := m.promptSchema.Choices[i]
+		isSelected := slices.Contains(m.choice, currentOptions.Value)
+		isHovered := m.cursor == i
 
-		currentOptions := m.promptSchema.Options[i]
+		indicator := ui.UnselectedIndicator
+		style := ui.NormalItemStyle
 
-		if m.cursor == i {
-			// on hover
-			s.WriteString("(•) ")
-		} else if slices.Contains(m.choice, currentOptions.Value) {
-			// selected
-			s.WriteString("(•) ")
-		} else {
-			// empty / not hovered
-			s.WriteString("() ")
+		if isSelected && isHovered {
+			indicator = ui.SelectedIndicator
+			style = ui.HoveredItemStyle
+		} else if isSelected {
+			indicator = ui.SelectedIndicator
+			style = ui.SelectedItemStyle
+		} else if isHovered {
+			indicator = ui.UnselectedIndicator
+			style = ui.HoveredItemStyle
 		}
 
-		s.WriteString(currentOptions.Title)
+		s.WriteString(style.Render(indicator))
+		s.WriteString(" ")
+		s.WriteString(style.Render(currentOptions.Title))
 		s.WriteString("\n")
-
-		s.WriteString(currentOptions.Description)
-		s.WriteString("\n")
-		s.WriteString("\n")
+		s.WriteString(ui.SubtextStyle.Render("  " + currentOptions.Description))
+		s.WriteString("\n\n")
 	}
-	s.WriteString("\n(press q to quit, press space to select choices, press enter to confirm)\n")
+
+	// hint
+	s.WriteString(ui.HintStyle.Render("(↑/k up  ↓/j down  space select  enter confirm  q quit)"))
+	s.WriteString("\n")
 
 	return s.String()
 }

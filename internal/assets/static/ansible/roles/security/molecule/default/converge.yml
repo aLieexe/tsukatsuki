@@ -1,0 +1,7 @@
+---
+- name: Converge
+  hosts: setup
+  gather_facts: true
+  vars_files: 
+  roles: 
+    - role: ../../../security

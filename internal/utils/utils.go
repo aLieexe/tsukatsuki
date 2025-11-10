@@ -11,8 +11,6 @@ import (
 	"strings"
 )
 
-// func CheckServerReachable() error
-
 func GetIPVersion(ip net.IP) string {
 	if ip.To4() != nil {
 		return "v4"

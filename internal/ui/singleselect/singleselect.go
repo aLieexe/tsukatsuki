@@ -7,6 +7,7 @@ import (
 
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 type Output struct {
@@ -19,14 +20,14 @@ func (o *Output) update(val string) {
 
 type model struct {
 	cursor       int
-	promptSchema prompts.SelectionSchema
+	promptSchema prompts.ChoiceQuestion
 
 	output *Output
 	exit   *bool
 	err    error
 }
 
-func InitializeSingleSelectModel(output *Output, promptSchema prompts.SelectionSchema, appConfig *services.AppConfig) model {
+func InitializeSingleSelectModel(output *Output, promptSchema prompts.ChoiceQuestion, appConfig *services.AppConfig) model {
 	model := model{
 		promptSchema: promptSchema,
 		output:       output,
@@ -50,18 +51,18 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 
 		case "enter":
-			m.output.update(m.promptSchema.Options[m.cursor].Value)
+			m.output.update(m.promptSchema.Choices[m.cursor].Value)
 			return m, tea.Quit
 
 		case "down", "j":
 			m.cursor++
-			if m.cursor >= len(m.promptSchema.Options) {
+			if m.cursor >= len(m.promptSchema.Choices) {
 				m.cursor = 0
 			}
 		case "up", "k":
 			m.cursor--
 			if m.cursor < 0 {
-				m.cursor = len(m.promptSchema.Options) - 1
+				m.cursor = len(m.promptSchema.Choices) - 1
 			}
 		}
 	}
@@ -71,26 +72,37 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := strings.Builder{}
-	s.WriteString("\n")
-	s.WriteString(m.promptSchema.Headers)
+
+	// header
+	s.WriteString(ui.HeaderStyle.Render(m.promptSchema.Headers))
 	s.WriteString("\n")
 
-	for i := 0; i < len(m.promptSchema.Options); i++ {
+	// description
+	s.WriteString(ui.DescriptionStyle.Render(m.promptSchema.Description))
+	s.WriteString("\n\n")
+
+	// options
+	for i := 0; i < len(m.promptSchema.Choices); i++ {
+		choice := m.promptSchema.Choices[i]
 
 		if m.cursor == i {
-			s.WriteString("(•) ")
+			s.WriteString(ui.HoveredItemStyle.Render(ui.SelectedIndicator))
+			s.WriteString(" ")
+			s.WriteString(ui.HighlightStyle.Render(choice.Title))
 		} else {
-			s.WriteString("( ) ")
+			s.WriteString(ui.UnselectedStyle.Render(ui.UnselectedIndicator))
+			s.WriteString(" ")
+			s.WriteString(ui.NormalItemStyle.Render(choice.Title))
 		}
 
-		s.WriteString(m.promptSchema.Options[i].Title)
 		s.WriteString("\n")
-		s.WriteString(m.promptSchema.Options[i].Description)
-		s.WriteString("\n")
-		s.WriteString("\n")
-
+		s.WriteString(ui.SubtextStyle.Render("  " + choice.Description))
+		s.WriteString("\n\n")
 	}
-	s.WriteString("(press q to quit, press enter to select)\n")
+
+	// hint
+	s.WriteString(ui.HintStyle.Render("(↑/k up  ↓/j down  enter select  q quit)"))
+	s.WriteString("\n")
 
 	return s.String()
 }
