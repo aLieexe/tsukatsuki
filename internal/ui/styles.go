@@ -4,17 +4,17 @@ import "github.com/charmbracelet/lipgloss"
 
 // color palette
 var (
-	colorPrimary   = lipgloss.Color("39")  // cyan
-	colorSecondary = lipgloss.Color("135") // purple
-	colorAccent    = lipgloss.Color("220") // yellow
-	colorSuccess   = lipgloss.Color("34")  // green
-	colorWarning   = lipgloss.Color("220") // yellow
-	colorError     = lipgloss.Color("196") // red
-	colorDebug     = lipgloss.Color("240") // gray
-	colorBg        = lipgloss.Color("235") // dark background
-	colorBorder    = lipgloss.Color("59")  // dark gray
-	colorText      = lipgloss.Color("15")  // white
-	colorMuted     = lipgloss.Color("244") // gray text
+	colorPrimary = lipgloss.Color("39") // cyan
+	// colorSecondary = lipgloss.Color("135") // purple
+	colorAccent  = lipgloss.Color("220") // yellow
+	colorSuccess = lipgloss.Color("34")  // green
+	colorWarning = lipgloss.Color("220") // yellow
+	colorError   = lipgloss.Color("196") // red
+	colorDebug   = lipgloss.Color("240") // gray
+	colorBg      = lipgloss.Color("235") // dark background
+	colorBorder  = lipgloss.Color("59")  // dark gray
+	colorText    = lipgloss.Color("15")  // white
+	colorMuted   = lipgloss.Color("244") // gray text
 )
 
 // log styles
