@@ -12,6 +12,7 @@ import (
 	"github.com/aLieexe/tsukatsuki/internal/config"
 	"github.com/aLieexe/tsukatsuki/internal/log"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 // generateCmd represents the generate command
@@ -25,21 +26,26 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		log := log.InitLogger(cmd)
+		logger := log.InitLogger(cmd)
+
+		logger.Info("loading configuration...")
 
 		yamlConfig, err := config.GetConfigFromFiles()
 		if err != nil {
-			log.Error(fmt.Sprintf("failed getting configuration files: %s", err))
-			log.Warn("Please run `tsukatsuki init` before trying this command again")
+			logger.Error(fmt.Sprintf("failed getting configuration files: %s", err))
+			logger.Warn("Please run `tsukatsuki init` before trying this command again")
 			os.Exit(1)
 		}
+		logger.Info("generating files...")
 
 		cfg := services.NewAppConfigFromYaml(yamlConfig)
 		err = cfg.GenerateDeploymentFiles()
 		if err != nil {
-			log.Error(fmt.Sprintf("failed generating configuration files: %s", err))
+			logger.Error(fmt.Sprintf("failed generating configuration files: %s", err))
 			os.Exit(1)
 		}
+		logger.Info(ui.SelectionStyle.Render("✓ files generated successfully"))
+		logger.Info(fmt.Sprintf("output directory: %s", cfg.OutputDir))
 	},
 }
 

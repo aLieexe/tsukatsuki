@@ -7,6 +7,7 @@ import (
 
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 type Output struct {
@@ -71,26 +72,36 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := strings.Builder{}
-	s.WriteString(m.promptSchema.Headers)
-	s.WriteString("\n")
-	s.WriteString(m.promptSchema.Description)
+
+	// header
+	s.WriteString(ui.HeaderStyle.Render(m.promptSchema.Headers))
 	s.WriteString("\n")
 
+	// description
+	s.WriteString(ui.DescriptionStyle.Render(m.promptSchema.Description))
+	s.WriteString("\n\n")
+
+	// options
 	for i := 0; i < len(m.promptSchema.Choices); i++ {
+		choice := m.promptSchema.Choices[i]
 
 		if m.cursor == i {
-			s.WriteString("(•) ")
+			s.WriteString(ui.HoveredItemStyle.Render(ui.SelectedIndicator))
+			s.WriteString(" ")
+			s.WriteString(ui.HighlightStyle.Render(choice.Title))
 		} else {
-			s.WriteString("( ) ")
+			s.WriteString(ui.UnselectedStyle.Render(ui.UnselectedIndicator))
+			s.WriteString(" ")
+			s.WriteString(ui.NormalItemStyle.Render(choice.Title))
 		}
 
-		s.WriteString(m.promptSchema.Choices[i].Title)
 		s.WriteString("\n")
-		s.WriteString(m.promptSchema.Choices[i].Description)
-		s.WriteString("\n")
-		s.WriteString("\n")
+		s.WriteString(ui.SubtextStyle.Render("  " + choice.Description))
+		s.WriteString("\n\n")
 	}
-	s.WriteString("(press q to quit, press enter to select)")
+
+	// hint
+	s.WriteString(ui.HintStyle.Render("(↑/k up  ↓/j down  enter select  q quit)"))
 	s.WriteString("\n")
 
 	return s.String()

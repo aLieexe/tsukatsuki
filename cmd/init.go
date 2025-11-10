@@ -48,17 +48,17 @@ var initCmd = &cobra.Command{
 }
 
 func runInitCommand(cmd *cobra.Command) {
-	log := log.InitLogger(cmd)
+	logger := log.InitLogger(cmd)
 
 	if config.ConfigFileExist() {
-		log.Warn("Continuing will create a new tsukatsuki.yaml. You can quit by using `Ctrl + C`")
+		logger.Warn("Continuing will create a new tsukatsuki.yaml. You can quit by using `Ctrl + C`")
 	}
 
 	cfg := services.NewAppConfig()
 
 	outputDir, err := cmd.Flags().GetString("output")
 	if err != nil {
-		log.Error(fmt.Sprintf("Failed to read flags: %s", err))
+		logger.Error(fmt.Sprintf("Failed to read flags: %s", err))
 	}
 
 	cfg.OutputDir = outputDir
@@ -86,7 +86,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// AppName Question
 	teaProgram := tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppName, questionSchema.Questions["app-name"], cfg, nil))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 
@@ -96,13 +96,13 @@ func runInitCommand(cmd *cobra.Command) {
 	// AppPort Question
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, questionSchema.Questions["app-port"], cfg, utils.PortValidator))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 
 	converted, err := strconv.Atoi(userInput.AppPort.Value)
 	if err != nil {
-		log.Warn("port is invalid, defaulted to 6969")
+		logger.Warn("port is invalid, defaulted to 6969")
 	}
 	cfg.AppPort = converted
 	cfg.ExitCLI(teaProgram)
@@ -110,7 +110,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// run time question
 	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Runtime, selectionSchema.Questions["runtime"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 	cfg.Runtime = userInput.Runtime.Value
@@ -118,7 +118,7 @@ func runInitCommand(cmd *cobra.Command) {
 
 	appImg, exists := imageMap[userInput.Runtime.Value]
 	if !exists {
-		log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+		logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
 		os.Exit(1)
 	}
 	cfg.BuildImage = appImg
@@ -126,7 +126,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// ServerIP Question
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, questionSchema.Questions["server-ip"], cfg, utils.IpValidator))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 
@@ -136,7 +136,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// Setup User
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SetupUser, questionSchema.Questions["server-user"], cfg, nil))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 
@@ -146,7 +146,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// Security
 	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Security, selectionSchema.Questions["security"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 	cfg.ExitCLI(teaProgram)
@@ -155,13 +155,13 @@ func runInitCommand(cmd *cobra.Command) {
 		cfg.Security = true
 		teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.SSHPort, questionSchema.Questions["server-port"], cfg, utils.PortValidator))
 		if _, err := teaProgram.Run(); err != nil {
-			log.Error(fmt.Sprintf("error receiving input: %s", err))
+			logger.Error(fmt.Sprintf("error receiving input: %s", err))
 			os.Exit(1)
 		}
 
 		converted, err := strconv.Atoi(userInput.SSHPort.Value)
 		if err != nil {
-			log.Warn("port is invalid, defaulted to 22")
+			logger.Warn("port is invalid, defaulted to 22")
 		}
 		cfg.SSHPort = converted
 		cfg.ExitCLI(teaProgram)
@@ -170,7 +170,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// AppSiteAddress
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, questionSchema.Questions["webserver-endpoint"], cfg, utils.SiteAddressValidator))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 
@@ -180,7 +180,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// webserver single select question
 	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Questions["webserver"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 	cfg.Webserver = userInput.Webserver.Value
@@ -188,14 +188,14 @@ func runInitCommand(cmd *cobra.Command) {
 
 	cfg.WebserverImage, exists = imageMap[userInput.Webserver.Value]
 	if !exists {
-		log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+		logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
 		os.Exit(1)
 	}
 
 	// Services Multi-choice question
 	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.Services, selectionSchema.Questions["services"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 	cfg.ExitCLI(teaProgram)
@@ -203,7 +203,7 @@ func runInitCommand(cmd *cobra.Command) {
 	for _, svc := range userInput.Services.Value {
 		img, exists := imageMap[svc]
 		if !exists {
-			log.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+			logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
 			os.Exit(1)
 		}
 
@@ -217,7 +217,7 @@ func runInitCommand(cmd *cobra.Command) {
 	// actions question
 	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.GithubActions, selectionSchema.Questions["actions"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
-		log.Error(fmt.Sprintf("error receiving input: %s", err))
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
 	for _, actions := range userInput.GithubActions.Value {
@@ -230,12 +230,12 @@ func runInitCommand(cmd *cobra.Command) {
 
 	err = cfg.SaveConfigToFile()
 	if err != nil {
-		log.Error(fmt.Sprintf("Failed creating configuration file: %s", err))
+		logger.Error(fmt.Sprintf("Failed creating configuration file: %s", err))
 	}
 
 	err = cfg.GenerateDeploymentFiles()
 	if err != nil {
-		log.Error(fmt.Sprintf("Failed generating deployment files: %s", err))
+		logger.Error(fmt.Sprintf("Failed generating deployment files: %s", err))
 	}
 }
 

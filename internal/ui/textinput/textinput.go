@@ -1,13 +1,14 @@
 package textinput
 
 import (
-	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 type Output struct {
@@ -33,6 +34,7 @@ func InitializeTextinputModel(output *Output, question prompts.Question, appConf
 	ti.CharLimit = 100
 	ti.Width = 40
 	ti.Placeholder = question.Placeholder
+	ti.PromptStyle = ui.CursorStyle
 
 	return model{
 		textInput: ti,
@@ -53,6 +55,7 @@ func InitializePasswordInputModel(output *Output, header string, placeholder str
 
 	ti.EchoMode = textinput.EchoPassword
 	ti.EchoCharacter = '•'
+	ti.PromptStyle = ui.CursorStyle
 
 	return model{
 		textInput: ti,
@@ -97,9 +100,25 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	view := fmt.Sprintf("%s: \n%s\n", m.header, m.textInput.View())
+	headerSection := ui.HeaderStyle.Render(m.header)
+
+	inputSection := m.textInput.View()
+
+	errorSection := ""
 	if m.err != nil {
-		view += fmt.Sprintf("error: %s\n", m.err.Error())
+		errorSection = ui.ErrorBoxStyle.Render(
+			ui.ErrorStyle.Render("✗ " + m.err.Error()),
+		)
 	}
+
+	hint := ui.HintStyle.Render("enter confirm  ctrl+c/esc cancel")
+
+	view := strings.TrimSpace(
+		headerSection + "\n\n" +
+			inputSection + "\n" +
+			errorSection + "\n" +
+			hint,
+	)
+
 	return view
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/aLieexe/tsukatsuki/internal/prompts"
 	"github.com/aLieexe/tsukatsuki/internal/services"
+	"github.com/aLieexe/tsukatsuki/internal/ui"
 )
 
 type Output struct {
@@ -86,36 +87,46 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m model) View() string {
 	s := strings.Builder{}
-	s.WriteString(m.promptSchema.Headers)
+
+	// header
+	s.WriteString(ui.HeaderStyle.Render(m.promptSchema.Headers))
 	s.WriteString("\n")
 
-	s.WriteString(m.promptSchema.Description)
-	s.WriteString("\n")
+	// description
+	s.WriteString(ui.DescriptionStyle.Render(m.promptSchema.Description))
+	s.WriteString("\n\n")
 
+	// options
 	for i := 0; i < len(m.promptSchema.Choices); i++ {
-
 		currentOptions := m.promptSchema.Choices[i]
+		isSelected := slices.Contains(m.choice, currentOptions.Value)
+		isHovered := m.cursor == i
 
-		if m.cursor == i {
-			// on hover
-			s.WriteString("(•) ")
-		} else if slices.Contains(m.choice, currentOptions.Value) {
-			// selected
-			s.WriteString("(•) ")
-		} else {
-			// empty / not hovered
-			s.WriteString("() ")
+		indicator := ui.UnselectedIndicator
+		style := ui.NormalItemStyle
+
+		if isSelected && isHovered {
+			indicator = ui.SelectedIndicator
+			style = ui.HoveredItemStyle
+		} else if isSelected {
+			indicator = ui.SelectedIndicator
+			style = ui.SelectedItemStyle
+		} else if isHovered {
+			indicator = ui.UnselectedIndicator
+			style = ui.HoveredItemStyle
 		}
 
-		s.WriteString(currentOptions.Title)
+		s.WriteString(style.Render(indicator))
+		s.WriteString(" ")
+		s.WriteString(style.Render(currentOptions.Title))
 		s.WriteString("\n")
-
-		s.WriteString(currentOptions.Description)
-		s.WriteString("\n")
-		s.WriteString("\n")
-
+		s.WriteString(ui.SubtextStyle.Render("  " + currentOptions.Description))
+		s.WriteString("\n\n")
 	}
-	s.WriteString("(press q to quit, press space to select choices, press enter to confirm)\n")
+
+	// hint
+	s.WriteString(ui.HintStyle.Render("(↑/k up  ↓/j down  space select  enter confirm  q quit)"))
+	s.WriteString("\n")
 
 	return s.String()
 }
