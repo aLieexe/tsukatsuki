@@ -152,6 +152,7 @@
     block: |
       key
       .ansible/
+      app.tar
     create: yes
     marker: "# {mark} Tsukatsuki Managed Block"
   delegate_to: localhost

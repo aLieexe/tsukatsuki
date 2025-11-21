@@ -18,4 +18,3 @@
     files: 
       - "{{ compose_file_name }}"
     state: present
-

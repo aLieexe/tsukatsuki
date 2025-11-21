@@ -44,6 +44,7 @@ type AppConfig struct {
 	SetupUser string
 	SSHPort   int
 	Security  bool
+	IPv6      bool
 
 	AppSiteAddress string
 	Webserver      string

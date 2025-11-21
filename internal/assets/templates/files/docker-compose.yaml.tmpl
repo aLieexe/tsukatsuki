@@ -1,6 +1,7 @@
 services:
 {{range .Service}}  {{.}}{{end}}
   app:
+    image: {{ .ProjectName }}:latest
     build:
       context: ../../
       dockerfile: deploy/conf/Dockerfile

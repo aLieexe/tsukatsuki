@@ -32,6 +32,14 @@ func IpValidator(input string) error {
 	return nil
 }
 
+func IsIPv6(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	return parsed.To4() == nil
+}
+
 func PortValidator(input string) error {
 	parsed, err := strconv.Atoi(input)
 	if err != nil {

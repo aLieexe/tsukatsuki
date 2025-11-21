@@ -40,7 +40,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 
 	for _, op := range operations {
 		if err := op.fn(); err != nil {
-			return fmt.Errorf("%s failed: %w", op.name, err)
+			return fmt.Errorf("%s : %w", op.name, err)
 		}
 	}
 
@@ -208,11 +208,13 @@ func (app *AppConfig) GenerateCompose() error {
 
 	// Combine all the needed data, that is the services and the volumes needed for said service to function
 	templateData := struct {
-		Service []string
-		Volumes []string
+		Service     []string
+		Volumes     []string
+		ProjectName string
 	}{
-		Service: []string{},
-		Volumes: []string{},
+		Service:     []string{},
+		Volumes:     []string{},
+		ProjectName: app.ProjectName,
 	}
 
 	// Combine services and webserver, why do i seperate this again?
