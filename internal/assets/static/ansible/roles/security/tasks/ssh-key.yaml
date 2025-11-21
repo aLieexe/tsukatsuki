@@ -4,6 +4,7 @@
     state: directory
     mode: '0755'
   delegate_to: localhost
+  become: false
 
 - name: Generate SSH key if it doesn't exist
   community.crypto.openssh_keypair:
@@ -12,13 +13,13 @@
     comment: "ansible-generated"
     size: 2048
   delegate_to: localhost
+  become: false
 
 - name: Fix SSH key ownership
   file:
     path: "{{ playbook_dir }}/key/{{ ansible_user }}"
-    owner: "{{ ansible_user }}"
-    group: "{{ ansible_user }}"
   delegate_to: localhost
+  become: false
   run_once: true
 
 - name: Deploy the generated public key to remote hosts

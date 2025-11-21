@@ -121,6 +121,7 @@
     path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
     mode: '0600'
   delegate_to: localhost
+  become: false
   when: not molecule_testing  | default(false)
 
 - name: Set permissions on fetched public key
@@ -128,27 +129,30 @@
     path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
     mode: '0644'
   delegate_to: localhost
+  become: false
   when: not molecule_testing | default(false)
 
 - name: Check if .gitignore exists
   ansible.builtin.stat:
-    path: "{{ playbook_dir }}/.gitignore"
+    path: "{{ local_project_path }}/.gitignore"
   register: gitignore_check
   delegate_to: localhost
+  become: false
   when: not molecule_testing | default(false)
 
 - name: Create .gitignore if not exist
   ansible.builtin.file:
-    path: "{{ playbook_dir }}/.gitignore"
+    path: "{{ local_project_path }}/.gitignore"
     state: touch
   when:
   - not molecule_testing  | default(false)
   - not gitignore_check.stat.exists
   delegate_to: localhost
+  become: false
 
 - name: Add needed lines to .gitignore
   ansible.builtin.blockinfile:
-    path: "{{ playbook_dir }}/.gitignore"
+    path: "{{ local_project_path }}/.gitignore"
     block: |
       key
       .ansible/
@@ -156,4 +160,5 @@
     create: yes
     marker: "# {mark} Tsukatsuki Managed Block"
   delegate_to: localhost
+  become: false
   when: not molecule_testing | default(false)

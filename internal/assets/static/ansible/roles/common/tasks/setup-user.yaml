@@ -37,6 +37,7 @@
     path: "{{ playbook_dir }}/key/{{ setup_user }}"
     mode: '0600'
   delegate_to: localhost
+  become: false
   when: not molecule_testing  | default(false)
 
 - name: Set permissions on fetched public key
@@ -44,3 +45,4 @@
     path: "{{ playbook_dir }}/key/{{ setup_user }}.pub"
     mode: '0644'
   delegate_to: localhost
+  become: false
