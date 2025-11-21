@@ -12,6 +12,12 @@
       - "--delete"
   become: false
 
+- name: Build application into a docker image
+  community.docker.docker_image_build:
+    name: "{{ project_name }}:latest"
+    path: "{{ remote_project_path }}"
+    dockerfile: "{{ remote_project_path }}/{{ generated_folder_name }}/conf/Dockerfile"  
+
 - name: Deploy application with Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ remote_project_path }}/{{ generated_folder_name }}/conf" 
