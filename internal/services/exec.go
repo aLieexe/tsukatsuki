@@ -77,6 +77,20 @@ func execCmd(cmd *exec.Cmd, logger *slog.Logger, errorPatterns ...string) error 
 	return nil
 }
 
+func ExecCommand(cmd *exec.Cmd) (string, error) {
+	var stdoutBuf, stderrBuf bytes.Buffer
+
+	cmd.Stdout = &stdoutBuf
+	cmd.Stderr = &stderrBuf
+
+	err := cmd.Run()
+	if err != nil {
+		return "", fmt.Errorf("executing command %s: %w: %s", cmd.String(), err, stderrBuf.String())
+	}
+
+	return stdoutBuf.String(), nil
+}
+
 // Should be use as a first attempt / option before trying out the one with password
 func ExecAnsible(logger *slog.Logger, ansiblePath, playbookName string, port int) error {
 	cmd := exec.Command(
