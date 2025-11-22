@@ -15,7 +15,6 @@
 
 - hosts: setup
   become: true
-  become_method: sudo
   pre_tasks:
     - name: Set ansible_port from ssh_port if given
       ansible.builtin.set_fact:

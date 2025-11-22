@@ -1,5 +1,6 @@
 caddy:
     image: {{ .DockerImage }}
+    container_name: caddy
     restart: unless-stopped
     ports:
     - "80:80"

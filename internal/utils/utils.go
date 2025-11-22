@@ -32,6 +32,14 @@ func IpValidator(input string) error {
 	return nil
 }
 
+func IsIPv6(ip string) bool {
+	parsed := net.ParseIP(ip)
+	if parsed == nil {
+		return false
+	}
+	return parsed.To4() == nil
+}
+
 func PortValidator(input string) error {
 	parsed, err := strconv.Atoi(input)
 	if err != nil {
@@ -67,14 +75,14 @@ func GetMainFileLocation() string {
 	return strings.TrimSpace(string(out))
 }
 
-// // should be between debian, RHEL? Idk if there is difference between CentOS or Alma or other
-// func GetDistribution() error
+func GetSSHKey(path string) (string, error) {
+	file, err := os.ReadFile(path)
+	if err != nil {
+		return "", fmt.Errorf("reading file %s: %w", path, err)
+	}
 
-// func ValidatePort() error
-
-// func ReplaceWithHyphens ()
-
-// func CheckDomainDNSConfiguration ()
+	return string(file), err
+}
 
 func GetProjectDirectory() string {
 	dir, err := os.Getwd()

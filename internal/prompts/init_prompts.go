@@ -119,11 +119,11 @@ func NewSelectionsSchema() *ChoiceQuestionSchema {
 						Description: "Continous Integrations Github Actions Workflows",
 						Value:       "actions-ci",
 					},
-					// {
-					// 	Title:       "CD",
-					// 	Description: "Continous Deployments automatically pull from github then built it in server",
-					// 	Value:       "actions-cd",
-					// },
+					{
+						Title:       "CD",
+						Description: "Continous Deployments automatically pull from github then built it in server",
+						Value:       "actions-cd",
+					},
 				},
 			},
 

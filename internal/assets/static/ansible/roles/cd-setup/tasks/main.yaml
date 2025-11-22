@@ -1,0 +1,26 @@
+- name: Generate SSH key for CD
+  community.crypto.openssh_keypair:
+    path: "{{ playbook_dir }}/key/CD"
+    type: rsa
+    comment: "ansible-generated Continous Deployment key"
+    size: 2048
+    mode: '0600'
+  delegate_to: localhost
+  become: false
+
+- name: Deploy the generated public key to remote hosts
+  ansible.posix.authorized_key:
+    user: "{{ hostvars['deploy_user'].ansible_user }}"
+    state: present
+    key: "{{ lookup('file', playbook_dir + '/key/CD' + '.pub') }}"
+
+- name: Add needed lines to .gitignore
+  ansible.builtin.blockinfile:
+    path: "{{ local_project_path }}/.gitignore"
+    block: |
+      app.tar
+    create: yes
+    marker: "# {mark} Tsukatsuki Managed Block"
+  delegate_to: localhost
+  become: false
+  when: not molecule_testing | default(false)

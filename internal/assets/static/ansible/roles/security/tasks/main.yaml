@@ -83,11 +83,11 @@
     port: "{{ item.port }}"
     proto: "{{ item.proto }}"
   loop:
-    - { rule: 'allow', port: "{{ new_ssh_port }}", proto: 'tcp' }   # SSH
     - { rule: 'allow', port: 80, proto: 'tcp' }   # HTTP
     - { rule: 'allow', port: 443, proto: 'tcp' }   # HTTPS
     - { rule: 'allow', port: 123, proto: 'udp' }  # NTP
     - { rule: 'deny', port: 22, proto: 'tcp' }  # Old SSH Port
+    - { rule: 'allow', port: "{{ new_ssh_port }}", proto: 'tcp' }   # SSH
   tags:
     - molecule-idempotence-notest
 

@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/aLieexe/tsukatsuki/internal/assets"
+	"github.com/aLieexe/tsukatsuki/internal/utils"
 )
 
 // List out all compose services to add in docker-compose.yaml
@@ -18,6 +19,19 @@ type ComposeConfig struct {
 }
 
 func (app *AppConfig) GenerateDeploymentFiles() error {
+	// Pre configuration, adjust needed generation config etc
+	extraRoles := make([]string, 0)
+
+	extraRoles = append(extraRoles, "common", "docker")
+	for _, actions := range app.GithubActions {
+		if actions.Type == "actions-cd" {
+			app.IPv6 = utils.IsIPv6(app.ServerIP)
+			extraRoles = append(extraRoles, "cd-setup")
+		}
+	}
+
+	extraConfigFiles := []string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"}
+
 	operations := []struct {
 		name string
 		fn   func() error
@@ -27,10 +41,10 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 			return app.GenerateCompose()
 		}},
 		{"ansible files generation", func() error {
-			return app.GenerateAnsibleFiles()
+			return app.GenerateAnsibleFiles(extraRoles)
 		}},
 		{"configuration files generation", func() error {
-			return app.GenerateConfigurationFiles([]string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"})
+			return app.GenerateConfigurationFiles(extraConfigFiles)
 		}},
 
 		{"github actions files generation", func() error {
@@ -40,7 +54,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 
 	for _, op := range operations {
 		if err := op.fn(); err != nil {
-			return fmt.Errorf("%s failed: %w", op.name, err)
+			return fmt.Errorf("%s : %w", op.name, err)
 		}
 	}
 
@@ -70,7 +84,7 @@ func (app *AppConfig) GenerateActionsFiles() error {
 	return nil
 }
 
-func (app *AppConfig) GenerateAnsibleFiles() error {
+func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 	const ansibleSetupCode = "ansible-setup"
 	const ansibleInventoryCode = "ansible-inventory"
 	const ansibleVarsCode = "ansible-vars"
@@ -84,8 +98,7 @@ func (app *AppConfig) GenerateAnsibleFiles() error {
 		Roles: make([]string, 0),
 	}
 
-	playbookData.Roles = append(playbookData.Roles, "common")
-	playbookData.Roles = append(playbookData.Roles, "docker")
+	playbookData.Roles = append(playbookData.Roles, extraRoles...)
 
 	if app.Security {
 		playbookData.Roles = append(playbookData.Roles, "security")
@@ -208,11 +221,13 @@ func (app *AppConfig) GenerateCompose() error {
 
 	// Combine all the needed data, that is the services and the volumes needed for said service to function
 	templateData := struct {
-		Service []string
-		Volumes []string
+		Service     []string
+		Volumes     []string
+		ProjectName string
 	}{
-		Service: []string{},
-		Volumes: []string{},
+		Service:     []string{},
+		Volumes:     []string{},
+		ProjectName: app.ProjectName,
 	}
 
 	// Combine services and webserver, why do i seperate this again?
