@@ -95,7 +95,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"go-dockerfile": "Dockerfile",
 
 		"go-actions-ci": "go-ci.yaml",
-		"go-actions-cd": "go-cd.yaml.tmpl",
+		"go-actions-cd": "go-cd.yaml",
 	}
 
 	outputDirMappings := map[string]string{

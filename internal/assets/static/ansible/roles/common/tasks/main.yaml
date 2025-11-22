@@ -37,8 +37,6 @@
   tags:
     - molecule-idempotence-notest
 
-
-
 - name: Enable UFW
   community.general.ufw:
     state: enabled
@@ -50,13 +48,15 @@
     file: setup-user.yaml
   when: ansible_user == "root" 
 
+- name: Define deploy user variable for readability
+  set_fact:
+    # extracting this to a variable makes the lines below much easier to read
+    deploy_user: "{{ hostvars['deploy_user'].ansible_user }}"
+
 - name: Create a user
   ansible.builtin.user:
-    name: "{{ hostvars['deploy_user'].ansible_user }}"
+    name: "{{ deploy_user }}"
     create_home: yes
-    generate_ssh_key: yes
-    ssh_key_bits: 2048
-    ssh_key_file: .ssh/id_rsa
     # We need this to give it actual shell 
     shell: /bin/bash
     # unlock account so SSH can use pubkey auth. JUST IN CASE Pubkey only is enabled, otherwise account will be locked
@@ -65,72 +65,39 @@
   register: user_info
   when: not molecule_testing  | default(false)
 
-
-# - name: Check password status of deploy user
-#   ansible.builtin.command:
-#     cmd: "passwd -S {{ hostvars['deploy_user'].ansible_user }}"
-#   register: passwd_status
-#   changed_when: false
-
-# - name: Debug password status
-#   ansible.builtin.debug:
-#     msg: "Password status: {{ passwd_status.stdout }}"
-
-
 - name: Ensure the deploy user account is unlocked
   ansible.builtin.command:
-    cmd: "passwd -d {{ hostvars['deploy_user'].ansible_user }}"
+    cmd: "passwd -d {{ deploy_user }}"
   when: not molecule_testing  | default(false)
 
-
-# - name: Check password status of deploy user
-#   ansible.builtin.command:
-#     cmd: "passwd -S {{ hostvars['deploy_user'].ansible_user }}"
-#   register: passwd_status
-#   changed_when: false
-
-# - name: Debug password status
-#   ansible.builtin.debug:
-#     msg: "Password status: {{ passwd_status.stdout }}"
-
-
 - name: Show what was returned
-  debug:
+  ansible.builtin.debug:
     var: user_info
 
-- name: Set authorized key taken from file
-  ansible.posix.authorized_key:
-    user: "{{ hostvars['deploy_user'].ansible_user }}"
-    state: present
-    key: "{{ user_info.ssh_public_key }}"
-
-- name: Fetch private key to manager
-  ansible.builtin.fetch:
-    src: "/home/{{ hostvars['deploy_user'].ansible_user }}/.ssh/id_rsa"
-    dest: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
-    flat: yes
-
-- name: Fetch public key to manager
-  ansible.builtin.fetch:
-    src: "/home/{{ hostvars['deploy_user'].ansible_user }}/.ssh/id_rsa.pub"
-    dest: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
-    flat: yes
-
-- name: Set permissions on fetched private key
+- name: Ensure key directory exists.
   ansible.builtin.file:
-    path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}"
+    path: "{{ playbook_dir }}/key"
+    state: directory
+    mode: '0755'
+  become: false
+  delegate_to: localhost
+
+
+- name: Generate SSH key for deploy_user
+  community.crypto.openssh_keypair:
+    path: "{{ playbook_dir }}/key/{{ deploy_user }}"
+    type: rsa
+    comment: "ansible-generated Deployment user"
+    size: 2048
     mode: '0600'
   delegate_to: localhost
   become: false
-  when: not molecule_testing  | default(false)
 
-- name: Set permissions on fetched public key
-  ansible.builtin.file:
-    path: "{{ playbook_dir }}/key/{{ hostvars['deploy_user'].ansible_user }}.pub"
-    mode: '0644'
-  delegate_to: localhost
-  become: false
-  when: not molecule_testing | default(false)
+- name: Deploy the generated public key to remote hosts
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    state: present
+    key: "{{ lookup('file', playbook_dir + '/key/' + deploy_user + '.pub') }}"
 
 - name: Check if .gitignore exists
   ansible.builtin.stat:
