@@ -1,0 +1,24 @@
+site_name: Tsukatsuki
+theme: 
+  name: readthedocs
+  highlightjs: true
+  hljs_languages:
+    - yaml
+    - bash
+site_url: https://alieexe.github.io/tsukatsuki/
+
+nav:
+- Getting Started: get-started.md
+- Command: 
+  - Init: init.md
+  - Deploy: deploy.md
+  - Generate: generate.md
+
+exclude_docs: |
+  api-config.json    # A file with this name anywhere.
+  /requirements.txt  # Top-level "docs/requirements.txt".
+  *.py               # Any file with this extension anywhere.
+  !/foo/example.py   # But keep this particular file.
+
+repo_url: https://github.com/aLieexe/tsukatsuki
+edit_uri: edit/main/docs/docs
