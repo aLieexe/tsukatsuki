@@ -36,10 +36,16 @@ run:
 	@:
 
 
-# For testing
+# For testing / dev
 .PHONY: install
 ## install: build the app
 install:
 	go build -ldflags='-s' -o=./bin/tsukatsuki .
 	sudo mv ./bin/tsukatsuki /usr/local/bin/tsukatsuki
+
+
+.PHONY: docs
+## docs: serve docs
+docs:
+	mkdocs serve -f ./docs/mkdocs.yml
 
