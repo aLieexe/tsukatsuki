@@ -8,6 +8,7 @@ theme:
 site_url: https://alieexe.github.io/tsukatsuki/
 
 nav:
+- Home: index.md
 - Getting Started: get-started.md
 - Command: 
   - Init: init.md
