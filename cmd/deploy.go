@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
@@ -96,36 +97,44 @@ var deployCmd = &cobra.Command{
 }
 
 func DisplaySecretsConfig(logger *slog.Logger, app *services.AppConfig) {
-	cmd := exec.Command(
-		"git",
-		"config",
-		"--get", "remote.origin.url",
-	)
+	const user = "tsukatsuki"
 
-	gitRemote, err := services.ExecCommand(cmd)
-	if err != nil {
-		logger.Warn("No Git remote found. Add a GitHub repository if you want to use GitHub Actions.")
+	printSecrets := func(remoteURL string) {
+		logger.Info("You must add the following values to your repository's GitHub Secrets to enable continuous deployment.")
+
+		if remoteURL != "" {
+			logger.Info(fmt.Sprintf("Add secrets here: %s/settings/secrets/actions", remoteURL))
+		}
+
+		logger.Info("Required secrets:")
+		logger.Info(fmt.Sprintf("  SSH_IP:    %s", app.ServerIP))
+		logger.Info(fmt.Sprintf("  SSH_USER:  %s", user))
+		logger.Info(fmt.Sprintf("  SSH_PORT:  %d", app.SSHPort))
+		logger.Info("  SSH_KEY:   (See below)")
+
+		keyPath := filepath.Join(app.LocalPath, app.OutputDir, "ansible", "key", user)
+		sshKey, err := utils.GetSSHKey(keyPath)
+		if err != nil {
+			logger.Warn("Failed to display SSH key.")
+			return
+		}
+		fmt.Println(sshKey)
 	}
 
-	gitRemote = gitRemote[:len(gitRemote)-5]
-	githubSecretURL := fmt.Sprintf("%s/settings/secrets/actions", gitRemote)
-
-	logger.Info("You must add the following values to your repository's GitHub Secrets to enable continuous deployment.")
-
-	logger.Info(fmt.Sprintf("Add secrets here: %s", githubSecretURL))
-	logger.Info("Required secrets:")
-	logger.Info(fmt.Sprintf("  SSH_IP :   %s", app.ServerIP))
-	logger.Info(fmt.Sprintf("  SSH_USER : %s", "tsukatsuki"))
-	logger.Info(fmt.Sprintf("  SSH_PORT : %d", app.SSHPort))
-	logger.Info("  SSH_KEY:  (See below)")
-
-	SSHKey, err := utils.GetSSHKey(filepath.Join(app.LocalPath, app.OutputDir, "ansible", "key", "tsukatsuki"))
-	if err != nil {
-		logger.Warn("Failed to display SSH key.")
+	// Try fetching git remote
+	cmd := exec.Command("git", "config", "--get", "remote.origin.url")
+	gitRemote, err := services.ExecCommand(cmd)
+	if err != nil || len(strings.TrimSpace(gitRemote)) == 0 {
+		logger.Warn("No Git remote found. Add a GitHub repository if you want to use GitHub Actions.")
+		printSecrets("")
 		return
 	}
 
-	fmt.Println(SSHKey)
+	// Clean remote URL (removing .git etc.)
+	gitRemote = strings.TrimSpace(gitRemote)
+	gitRemote = strings.TrimSuffix(gitRemote, ".git")
+
+	printSecrets(gitRemote)
 }
 
 func init() {

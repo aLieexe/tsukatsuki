@@ -40,6 +40,11 @@ func NewQuestionSchema() *QuestionSchema {
 				Placeholder: "6969",
 			},
 
+			"app-entrypoint": {
+				Header:      "Where is your application entrypoint",
+				Placeholder: "",
+			},
+
 			"server-ip": {
 				Header:      "What is your server IP",
 				Placeholder: "127.0.0.1",
@@ -55,7 +60,7 @@ func NewQuestionSchema() *QuestionSchema {
 				Placeholder: "222",
 			},
 
-			"webserver-endpoint": {
+			"proxy-endpoint": {
 				Header:      "What is the endpoint that will be used for this App (enter to use ip)",
 				Placeholder: "subdomain.placeholder.com",
 			},
@@ -68,9 +73,9 @@ func NewQuestionSchema() *QuestionSchema {
 func NewSelectionsSchema() *ChoiceQuestionSchema {
 	schema := &ChoiceQuestionSchema{
 		map[string]ChoiceQuestion{
-			"webserver": {
-				Headers:     "Webserver Choices",
-				Description: "Select the webserver to host your application.",
+			"proxy": {
+				Headers:     "Proxy Choices",
+				Description: "Select the proxy to host your application.",
 				Choices: []Choice{
 					{
 						Title:       "Caddy",
@@ -106,6 +111,11 @@ func NewSelectionsSchema() *ChoiceQuestionSchema {
 						Title:       "Go",
 						Description: "Use Go (Golang) as your application runtime.",
 						Value:       "go",
+					},
+					{
+						Title:       "Node",
+						Description: "Use Node JS as your application runtime.",
+						Value:       "node",
 					},
 				},
 			},

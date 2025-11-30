@@ -1,0 +1,15 @@
+FROM {{ .BuildImage}} AS main
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install --production
+
+COPY . /app
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends ca-certificates curl && \
+    rm -rf /var/lib/apt/lists/*
+
+CMD ["node", "{{ .EntryPoint }}"]

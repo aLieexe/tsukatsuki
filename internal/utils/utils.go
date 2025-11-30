@@ -66,13 +66,30 @@ func SiteAddressValidator(input string) error {
 	return nil
 }
 
-func GetMainFileLocation() string {
-	cmd := exec.Command("sh", "-c", `find . -type f -name "*.go" -exec grep -m1 -H '^func main()' {} + | grep -v '^[[:space:]]*//' | head -n1 | cut -d: -f1`)
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
+func GetMainFileLocation(runtime string) string {
+	output := ""
+	if runtime == "go" {
+		cmd := exec.Command("sh", "-c", `find . -type f -name "*.go" -exec grep -m1 -H '^func main()' {} + | grep -v '^[[:space:]]*//' | head -n1 | cut -d: -f1`)
+		out, err := cmd.Output()
+		if err != nil {
+			return "./main.go"
+		}
+		output = strings.TrimSpace(string(out))
 	}
-	return strings.TrimSpace(string(out))
+	if runtime == "node" {
+		cmd := exec.Command("sh", "-c",
+			`find . -type d -name node_modules -prune -o \
+         -type f \( -name "*.js" -o -name "*.jsx" \) -print \
+         | xargs grep -m1 -H -E '(express\(|app\.listen|ReactDOM\.render|createRoot)' \
+         | head -n1 \
+         | cut -d: -f1`)
+		out, err := cmd.Output()
+		if err != nil {
+			return "./index.js"
+		}
+		output = strings.TrimSpace(string(out))
+	}
+	return output
 }
 
 func GetSSHKey(path string) (string, error) {
