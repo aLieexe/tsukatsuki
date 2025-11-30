@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o app {{ .MainPath}}
+RUN go build -o app {{ .EntryPoint}}
 
 FROM debian:bookworm-slim
 

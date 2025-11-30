@@ -26,12 +26,13 @@ type UserInput struct {
 	ServerIP       *textinput.Output
 	AppSiteAddress *textinput.Output
 	AppPort        *textinput.Output
+	AppEntryPoint  *textinput.Output
 	SetupUser      *textinput.Output
 	SSHPort        *textinput.Output
 
-	Webserver *singleselect.Output
-	Runtime   *singleselect.Output
-	Security  *singleselect.Output
+	Proxy    *singleselect.Output
+	Runtime  *singleselect.Output
+	Security *singleselect.Output
 
 	Services      *multiselect.Output
 	GithubActions *multiselect.Output
@@ -66,14 +67,15 @@ func runInitCommand(cmd *cobra.Command) {
 	userInput := &UserInput{
 		AppName:        &textinput.Output{},
 		AppPort:        &textinput.Output{},
+		AppEntryPoint:  &textinput.Output{},
 		ServerIP:       &textinput.Output{},
 		AppSiteAddress: &textinput.Output{},
 		SetupUser:      &textinput.Output{},
 		SSHPort:        &textinput.Output{},
 
-		Webserver: &singleselect.Output{},
-		Runtime:   &singleselect.Output{},
-		Security:  &singleselect.Output{},
+		Proxy:    &singleselect.Output{},
+		Runtime:  &singleselect.Output{},
+		Security: &singleselect.Output{},
 
 		Services:      &multiselect.Output{},
 		GithubActions: &multiselect.Output{},
@@ -123,6 +125,21 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 	cfg.BuildImage = appImg
 
+	// EntryPoint question
+	q := questionSchema.Questions["app-entrypoint"]
+	q.Placeholder = utils.GetMainFileLocation(cfg.Runtime)
+
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppEntryPoint, q, cfg, nil))
+	if _, err := teaProgram.Run(); err != nil {
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
+		os.Exit(1)
+	}
+
+	fmt.Println(userInput.AppEntryPoint.Value)
+
+	cfg.EntryPoint = userInput.AppEntryPoint.Value
+	cfg.ExitCLI(teaProgram)
+
 	// ServerIP Question
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ServerIP, questionSchema.Questions["server-ip"], cfg, utils.IpValidator))
 	if _, err := teaProgram.Run(); err != nil {
@@ -168,7 +185,7 @@ func runInitCommand(cmd *cobra.Command) {
 	}
 
 	// AppSiteAddress
-	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, questionSchema.Questions["webserver-endpoint"], cfg, utils.SiteAddressValidator))
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppSiteAddress, questionSchema.Questions["proxy-endpoint"], cfg, utils.SiteAddressValidator))
 	if _, err := teaProgram.Run(); err != nil {
 		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
@@ -177,16 +194,16 @@ func runInitCommand(cmd *cobra.Command) {
 	cfg.AppSiteAddress = userInput.AppSiteAddress.Value
 	cfg.ExitCLI(teaProgram)
 
-	// webserver single select question
-	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Webserver, selectionSchema.Questions["webserver"], cfg))
+	// proxy single select question
+	teaProgram = tea.NewProgram(singleselect.InitializeSingleSelectModel(userInput.Proxy, selectionSchema.Questions["proxy"], cfg))
 	if _, err := teaProgram.Run(); err != nil {
 		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
-	cfg.Webserver = userInput.Webserver.Value
+	cfg.Proxy = userInput.Proxy.Value
 	cfg.ExitCLI(teaProgram)
 
-	cfg.WebserverImage, exists = imageMap[userInput.Webserver.Value]
+	cfg.ProxyImage, exists = imageMap[userInput.Proxy.Value]
 	if !exists {
 		logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
 		os.Exit(1)

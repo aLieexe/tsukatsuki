@@ -14,6 +14,7 @@ type AppConfigYaml struct {
 		Port       int    `yaml:"port"`
 		Runtime    string `yaml:"runtime"`
 		BuildImage string `yaml:"build_image"`
+		EntryPoint string `yaml:"entrypoint"`
 	} `yaml:"project"`
 
 	Server struct {
@@ -23,11 +24,11 @@ type AppConfigYaml struct {
 		Security  bool   `yaml:"security"`
 	} `yaml:"server"`
 
-	Webserver struct {
+	Proxy struct {
 		Type        string `yaml:"type"`
 		Domain      string `yaml:"domain"`
 		DockerImage string `yaml:"docker_image"`
-	} `yaml:"webserver"`
+	} `yaml:"proxy"`
 
 	Services []struct {
 		Name        string `yaml:"name"`

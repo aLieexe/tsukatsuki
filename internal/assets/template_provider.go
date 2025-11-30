@@ -74,10 +74,13 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"ansible-inventory": "ansible/inventory.ini.tmpl",
 		"ansible-molecule":  "ansible/converge.yml.tmpl",
 
-		"go-dockerfile": "files/go-dockerfile.tmpl",
+		"go-dockerfile":   "files/go-dockerfile.tmpl",
+		"node-dockerfile": "files/node-dockerfile.tmpl",
 
-		"go-actions-ci": "files/go-ci.yaml.tmpl",
-		"go-actions-cd": "files/go-cd.yaml.tmpl",
+		"go-actions-ci":   "files/go-ci.yaml.tmpl",
+		"node-actions-ci": "files/node-ci.yaml.tmpl",
+
+		"docker-actions-cd": "files/docker-cd.yaml.tmpl",
 	}
 
 	// filename mappings for output id: output_name
@@ -92,10 +95,13 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"ansible-inventory": "inventory.ini",
 		"ansible-molecule":  "converge.yml",
 
-		"go-dockerfile": "Dockerfile",
+		"go-dockerfile":   "Dockerfile",
+		"node-dockerfile": "Dockerfile",
 
-		"go-actions-ci": "go-ci.yaml",
-		"go-actions-cd": "go-cd.yaml",
+		"go-actions-ci":   "CI.yaml",
+		"node-actions-ci": "CI.yaml",
+
+		"docker-actions-cd": "CD.yaml",
 	}
 
 	outputDirMappings := map[string]string{
@@ -109,10 +115,13 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
 		"ansible-inventory": filepath.Join(generatedDir, "ansible"),
 		"ansible-molecule":  filepath.Join(generatedDir, "ansible/molecule/default"),
 
-		"go-dockerfile": filepath.Join(generatedDir, "conf"),
+		"go-dockerfile":   filepath.Join(generatedDir, "conf"),
+		"node-dockerfile": filepath.Join(generatedDir, "conf"),
 
-		"go-actions-ci": ".github/workflows",
-		"go-actions-cd": ".github/workflows",
+		"go-actions-ci":   ".github/workflows",
+		"node-actions-ci": ".github/workflows",
+
+		"docker-actions-cd": ".github/workflows",
 	}
 
 	subFS, err := fs.Sub(templatesFS, templateEmbedDirectory)

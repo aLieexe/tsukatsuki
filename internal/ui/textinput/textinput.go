@@ -77,6 +77,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
+		case tea.KeyTab:
+			if m.textInput.Value() == "" {
+				m.textInput.SetValue(m.textInput.Placeholder)
+			}
+
 		case tea.KeyEnter:
 			val := m.textInput.Value()
 			if m.validator != nil {

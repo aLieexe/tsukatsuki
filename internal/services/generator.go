@@ -30,7 +30,7 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		}
 	}
 
-	extraConfigFiles := []string{app.Webserver, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"}
+	extraConfigFiles := []string{app.Proxy, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"}
 
 	operations := []struct {
 		name string
@@ -73,6 +73,15 @@ func (app *AppConfig) GenerateActionsFiles() error {
 	}
 
 	for _, actions := range app.GithubActions {
+		if actions.Type == "actions-cd" {
+			code := fmt.Sprintf("%s-%s", "docker", actions.Type)
+			fileTemplate := templateProvider.GetFileTemplates()[code]
+
+			if err := generateStandardTemplate(&fileTemplate, code, app); err != nil {
+				return fmt.Errorf("generating template %s: %w", code, err)
+			}
+			continue
+		}
 		code := fmt.Sprintf("%s-%s", app.Runtime, actions.Type)
 		fileTemplate := templateProvider.GetFileTemplates()[code]
 
@@ -185,6 +194,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 }
 
 func (app *AppConfig) GenerateCompose() error {
+	fmt.Println(app.EntryPoint)
 	// Mapping name of docker-compose.yml in template_provider.go
 	const composeTemplateName = "docker-compose"
 
@@ -224,15 +234,17 @@ func (app *AppConfig) GenerateCompose() error {
 		Service     []string
 		Volumes     []string
 		ProjectName string
+		AppPort     int
 	}{
 		Service:     []string{},
 		Volumes:     []string{},
 		ProjectName: app.ProjectName,
+		AppPort:     app.AppPort,
 	}
 
-	// Combine services and webserver, why do i seperate this again?
+	// Combine services and proxy, why do i seperate this again?
 	services := []Service{
-		{Name: app.Webserver, DockerImage: app.WebserverImage},
+		{Name: app.Proxy, DockerImage: app.ProxyImage},
 	}
 
 	for _, service := range app.Services {

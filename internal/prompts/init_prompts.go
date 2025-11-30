@@ -40,6 +40,11 @@ func NewQuestionSchema() *QuestionSchema {
 				Placeholder: "6969",
 			},
 
+			"app-entrypoint": {
+				Header:      "Where is your application entrypoint",
+				Placeholder: "",
+			},
+
 			"server-ip": {
 				Header:      "What is your server IP",
 				Placeholder: "127.0.0.1",
@@ -55,7 +60,7 @@ func NewQuestionSchema() *QuestionSchema {
 				Placeholder: "222",
 			},
 
-			"webserver-endpoint": {
+			"proxy-endpoint": {
 				Header:      "What is the endpoint that will be used for this App (enter to use ip)",
 				Placeholder: "subdomain.placeholder.com",
 			},
@@ -68,77 +73,82 @@ func NewQuestionSchema() *QuestionSchema {
 func NewSelectionsSchema() *ChoiceQuestionSchema {
 	schema := &ChoiceQuestionSchema{
 		map[string]ChoiceQuestion{
-			"webserver": {
-				Headers:     "Webserver Choices",
-				Description: "Webserver is a thing",
+			"proxy": {
+				Headers:     "Proxy Choices",
+				Description: "Select the proxy to host your application.",
 				Choices: []Choice{
 					{
 						Title:       "Caddy",
-						Description: "A Modern Webserver Written in Golang",
+						Description: "A modern, automated web server written in Go, with built-in HTTPS.",
 						Value:       "caddy",
 					},
 				},
 			},
 
 			"services": {
-				Headers:     "Services choices",
-				Description: "You can pick more than 1 btw",
+				Headers:     "Services Choices",
+				Description: "Pick one or more services to include in your setup.",
 				Choices: []Choice{
 					{
 						Title:       "Postgresql",
-						Description: "A free and open-source relational database management system",
+						Description: "A reliable, open-source relational database system.",
 						Value:       "postgresql",
 					},
 
 					{
 						Title:       "Redis",
-						Description: "An in-memory key-value database",
+						Description: "An in-memory key-value store for caching and fast data access.",
 						Value:       "redis",
 					},
 				},
 			},
 
 			"runtime": {
-				Headers:     "Runtime to use",
-				Description: "What runtime dawg, pick one",
+				Headers:     "Runtime Environment",
+				Description: "Choose the programming runtime for your application.",
 				Choices: []Choice{
 					{
 						Title:       "Go",
-						Description: "Wait why is it only golang here? WDF",
+						Description: "Use Go (Golang) as your application runtime.",
 						Value:       "go",
+					},
+					{
+						Title:       "Node",
+						Description: "Use Node JS as your application runtime.",
+						Value:       "node",
 					},
 				},
 			},
 
 			"actions": {
-				Headers:     "Github actions to generate",
-				Description: "U can pick more than one",
+				Headers:     "GitHub Actions",
+				Description: "Select one or more workflows for CI/CD automation.",
 				Choices: []Choice{
 					{
 						Title:       "CI",
-						Description: "Continous Integrations Github Actions Workflows",
+						Description: "Set up continuous integration workflows to automatically test your code.",
 						Value:       "actions-ci",
 					},
 					{
 						Title:       "CD",
-						Description: "Continous Deployments automatically pull from github then built it in server",
+						Description: "Set up continuous deployment workflows to automatically deploy updates to your server.",
 						Value:       "actions-cd",
 					},
 				},
 			},
 
 			"security": {
-				Headers:     "Do you want Server Hardening",
-				Description: "Server hardening include SSH Hardening, SELinux, and other security practices",
+				Headers:     "Server Hardening",
+				Description: "Enable security enhancements like SSH hardening and SELinux for a safer server environment.",
 				Choices: []Choice{
 					{
 						Title:       "Yes",
-						Description: "",
+						Description: "Enable server hardening features.",
 						Value:       "true",
 					},
 					{
 						Title:       "No",
-						Description: "",
+						Description: "Do not enable additional security measures.",
 						Value:       "false",
 					},
 					// Maybe add Backup, Notifications?

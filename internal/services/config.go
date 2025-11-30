@@ -22,7 +22,8 @@ type GithubActions struct {
 
 func GetDefaultImageMap() map[string]string {
 	imageMap := map[string]string{
-		"go": "golang:1.24.4-bookworm",
+		"go":   "golang:1.24.4-bookworm",
+		"node": "node:25.2-bookworm-slim",
 
 		"caddy": "caddy:2.10.2-alpine",
 
@@ -37,7 +38,7 @@ type AppConfig struct {
 	ProjectName string
 	AppPort     int
 	Runtime     string
-	MainPath    string
+	EntryPoint  string
 	BuildImage  string
 
 	ServerIP  string
@@ -47,8 +48,8 @@ type AppConfig struct {
 	IPv6      bool
 
 	AppSiteAddress string
-	Webserver      string
-	WebserverImage string
+	Proxy          string
+	ProxyImage     string
 
 	Services []Service
 
@@ -66,7 +67,7 @@ func NewAppConfig() *AppConfig {
 		ProjectName: "tsukatsuki",
 		AppPort:     5050,
 		Runtime:     "go",
-		MainPath:    utils.GetMainFileLocation(),
+		EntryPoint:  utils.GetMainFileLocation("go"),
 		BuildImage:  "latest",
 
 		ServerIP:  "127.0.0.1",
@@ -75,8 +76,8 @@ func NewAppConfig() *AppConfig {
 		Security:  false,
 
 		AppSiteAddress: "placeholder.com",
-		Webserver:      "caddy",
-		WebserverImage: "latest",
+		Proxy:          "caddy",
+		ProxyImage:     "latest",
 
 		Services: nil,
 
@@ -100,15 +101,16 @@ func (app *AppConfig) SaveConfigToFile() error {
 	cfg.Project.Port = app.AppPort
 	cfg.Project.Runtime = app.Runtime
 	cfg.Project.BuildImage = app.BuildImage
+	cfg.Project.EntryPoint = app.EntryPoint
 
 	cfg.Server.IP = app.ServerIP
 	cfg.Server.SetupUser = app.SetupUser
 	cfg.Server.SSHPort = app.SSHPort
 	cfg.Server.Security = app.Security
 
-	cfg.Webserver.Domain = app.AppSiteAddress
-	cfg.Webserver.Type = app.Webserver
-	cfg.Webserver.DockerImage = app.WebserverImage
+	cfg.Proxy.Domain = app.AppSiteAddress
+	cfg.Proxy.Type = app.Proxy
+	cfg.Proxy.DockerImage = app.ProxyImage
 
 	for _, service := range app.Services {
 		cfg.Services = append(cfg.Services, struct {
@@ -157,16 +159,16 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 		Runtime:     yamlConfig.Project.Runtime,
 		BuildImage:  yamlConfig.Project.BuildImage,
 
-		MainPath: utils.GetMainFileLocation(),
+		EntryPoint: yamlConfig.Project.EntryPoint,
 
 		ServerIP:  yamlConfig.Server.IP,
 		SetupUser: yamlConfig.Server.SetupUser,
 		SSHPort:   yamlConfig.Server.SSHPort,
 		Security:  yamlConfig.Server.Security,
 
-		Webserver:      yamlConfig.Webserver.Type,
-		AppSiteAddress: yamlConfig.Webserver.Domain,
-		WebserverImage: yamlConfig.Webserver.DockerImage,
+		Proxy:          yamlConfig.Proxy.Type,
+		AppSiteAddress: yamlConfig.Proxy.Domain,
+		ProxyImage:     yamlConfig.Proxy.DockerImage,
 
 		Services: services,
 
