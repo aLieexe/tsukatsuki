@@ -6,7 +6,7 @@ caddy:
     - "80:80"
     - "443:443"
     volumes:
-    - ./conf:/etc/caddy
+    - ./Caddyfile:/etc/caddy/Caddyfile
     - caddy_data:/data
     - caddy_config:/config
     depends_on:
