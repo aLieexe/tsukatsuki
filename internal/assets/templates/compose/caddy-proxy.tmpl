@@ -7,7 +7,7 @@ caddy:
     - "443:443"
     volumes:
     - ./Caddyfile:/etc/caddy/Caddyfile
-    - ./sites:/etc/caddy/sites
+    - ./project:/etc/caddy/sites
     - caddy_data:/data
     - caddy_config:/config
     networks:

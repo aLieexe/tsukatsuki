@@ -64,6 +64,75 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 }
 
 func (app *AppConfig) GenerateProxyFiles() error {
+	const composeTemplateName = "compose-proxy"
+	proxyPresetCode := fmt.Sprintf("%s-proxy", app.Proxy)
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
+	if err != nil {
+		return err
+	}
+	presetProvider := templateProvider.GetComposePresetTemplates()
+	preset := presetProvider[proxyPresetCode]
+
+	proxyPresetTmpl, err := template.New(proxyPresetCode).Option("missingkey=error").Parse(string(preset.Content))
+	if err != nil {
+		return fmt.Errorf("parsing template %s: %w", composeTemplateName, err)
+	}
+
+	presetTemplateData := struct {
+		DockerImage string
+	}{
+		DockerImage: app.ProxyImage,
+	}
+
+	var buffer bytes.Buffer
+	err = proxyPresetTmpl.Execute(&buffer, presetTemplateData)
+	if err != nil {
+		return fmt.Errorf("executing template %s: %w", proxyPresetCode, err)
+	}
+
+	// All the service and volumes listed previously
+	proxyPreset := string(buffer.String())
+
+	composeTemplateData := struct {
+		Volumes       []string
+		ProxyTemplate string
+	}{
+		Volumes:       []string{},
+		ProxyTemplate: proxyPreset,
+	}
+
+	proxyComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
+
+	err = createOutputDirectory(proxyComposeTemplate.OutputDir)
+	if err != nil {
+		return err
+	}
+
+	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(proxyComposeTemplate.Content))
+	if err != nil {
+		return fmt.Errorf("parsing template %s: %w", proxyComposeTemplate.Filename, err)
+	}
+
+	// create output file
+	filePath := filepath.Join(proxyComposeTemplate.OutputDir, proxyComposeTemplate.Filename)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("creating file %s: %w", filePath, err)
+	}
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	err = tmpl.Execute(file, composeTemplateData)
+	if err != nil {
+		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
+	}
+
 	return nil
 }
 
@@ -249,9 +318,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	}
 
 	// Combine services and proxy, why do i seperate this again?
-	services := []Service{
-		{Name: app.Proxy, DockerImage: app.ProxyImage},
-	}
+	services := []Service{}
 
 	for _, service := range app.Services {
 		services = append(services, Service{
