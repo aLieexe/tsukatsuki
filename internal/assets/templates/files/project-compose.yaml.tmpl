@@ -5,7 +5,7 @@ services:
     - {{ $.ProjectName }}_network
 
 {{end}}
-  app:
+  {{.ProjectName}}:
     image: {{ .ProjectName }}:latest
     container_name: {{ .ProjectName }}
     healthcheck:

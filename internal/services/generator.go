@@ -133,6 +133,18 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 
+	proxyEntryCode := fmt.Sprintf("proxy-%s-entry", app.Proxy)
+	proxyProjectCode := fmt.Sprintf("proxy-%s-project", app.Proxy)
+
+	fileTemplate := templateProvider.GetFileTemplates()[proxyEntryCode]
+	if err := generateStandardTemplate(&fileTemplate, proxyEntryCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", proxyEntryCode, err)
+	}
+
+	fileTemplate = templateProvider.GetFileTemplates()[proxyProjectCode]
+	if err := generateStandardTemplate(&fileTemplate, proxyProjectCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", proxyProjectCode, err)
+	}
 	return nil
 }
 
