@@ -42,13 +42,13 @@ const (
 	composeEmbedDirectory  = "compose"
 )
 
-func NewTemplateProvider(generatedDir string) (*TemplateProvider, error) {
+func NewTemplateProvider(generatedDir string, projectName string) (*TemplateProvider, error) {
 	provider := &TemplateProvider{
 		fileTemplates:           make(map[string]FileTemplate),
 		composePresetsTemplates: make(map[string]ComposePresetTemplates),
 	}
 
-	err := provider.loadFileTemplates(generatedDir)
+	err := provider.loadFileTemplates(generatedDir, projectName)
 	if err != nil {
 		return nil, err
 	}
@@ -61,67 +61,76 @@ func NewTemplateProvider(generatedDir string) (*TemplateProvider, error) {
 }
 
 // loading, and mapping the files
-func (tp *TemplateProvider) loadFileTemplates(generatedDir string) error {
+func (tp *TemplateProvider) loadFileTemplates(generatedDir string, projectName string) error {
 	// template mappings, id: path
 	fileTemplateMappings := map[string]string{
-		"caddy":          "files/Caddyfile.tmpl",
-		"nginx":          "files/nginx.conf.tmpl",
-		"rsync-ignore":   "files/.rsyncignore.tmpl",
-		"docker-compose": "files/docker-compose.yaml.tmpl",
+		"proxy-caddy-entry":   "files/Caddyfile.tmpl",
+		"proxy-caddy-project": "files/project.caddy.tmpl",
+
+		"rsync-ignore": "files/.rsyncignore.tmpl",
+
+		"compose-project": "files/project-compose.yaml.tmpl",
+		"compose-proxy":   "files/proxy-compose.yaml.tmpl",
 
 		"ansible-setup":     "ansible/setup.yaml.tmpl",
 		"ansible-vars":      "ansible/all.yaml.tmpl",
 		"ansible-inventory": "ansible/inventory.ini.tmpl",
 		"ansible-molecule":  "ansible/converge.yml.tmpl",
 
-		"go-dockerfile":   "files/go-dockerfile.tmpl",
-		"node-dockerfile": "files/node-dockerfile.tmpl",
+		"dockerfile-go":   "files/go-dockerfile.tmpl",
+		"dockerfile-node": "files/node-dockerfile.tmpl",
 
-		"go-actions-ci":   "files/go-ci.yaml.tmpl",
-		"node-actions-ci": "files/node-ci.yaml.tmpl",
+		"actions-ci-go":   "files/go-ci.yaml.tmpl",
+		"actions-ci-node": "files/node-ci.yaml.tmpl",
 
-		"docker-actions-cd": "files/docker-cd.yaml.tmpl",
+		"actions-cd-docker": "files/docker-cd.yaml.tmpl",
 	}
 
 	// filename mappings for output id: output_name
 	fileNameMappings := map[string]string{
-		"caddy":          "Caddyfile",
-		"nginx":          "nginx.conf",
-		"docker-compose": "docker-compose.yaml",
-		"rsync-ignore":   ".rsyncignore",
+		"proxy-caddy-entry":   "Caddyfile",
+		"proxy-caddy-project": fmt.Sprintf("%s.caddy", projectName),
+
+		"rsync-ignore": ".rsyncignore",
+
+		"compose-project": "project-compose.yaml",
+		"compose-proxy":   "proxy-compose.yaml",
 
 		"ansible-setup":     "setup.yaml",
 		"ansible-vars":      "all.yaml",
 		"ansible-inventory": "inventory.ini",
 		"ansible-molecule":  "converge.yml",
 
-		"go-dockerfile":   "Dockerfile",
-		"node-dockerfile": "Dockerfile",
+		"dockerfile-go":   "Dockerfile",
+		"dockerfile-node": "Dockerfile",
 
-		"go-actions-ci":   "CI.yaml",
-		"node-actions-ci": "CI.yaml",
+		"actions-ci-go":   "CI.yaml",
+		"actions-ci-node": "CI.yaml",
 
-		"docker-actions-cd": "CD.yaml",
+		"actions-cd-docker": "CD.yaml",
 	}
 
 	outputDirMappings := map[string]string{
-		"caddy":          filepath.Join(generatedDir, "conf"),
-		"nginx":          filepath.Join(generatedDir, "conf"),
-		"rsync-ignore":   filepath.Join(generatedDir, "conf"),
-		"docker-compose": filepath.Join(generatedDir, "conf"),
+		"proxy-caddy-entry":   filepath.Join(generatedDir, "proxy"),
+		"proxy-caddy-project": filepath.Join(generatedDir, "proxy"),
+
+		"rsync-ignore": filepath.Join(generatedDir, "conf"),
+
+		"compose-proxy":   filepath.Join(generatedDir, "proxy"),
+		"compose-project": filepath.Join(generatedDir, "conf"),
 
 		"ansible-setup":     filepath.Join(generatedDir, "ansible"),
 		"ansible-vars":      filepath.Join(generatedDir, "ansible/group_vars"),
 		"ansible-inventory": filepath.Join(generatedDir, "ansible"),
 		"ansible-molecule":  filepath.Join(generatedDir, "ansible/molecule/default"),
 
-		"go-dockerfile":   filepath.Join(generatedDir, "conf"),
-		"node-dockerfile": filepath.Join(generatedDir, "conf"),
+		"dockerfile-go":   filepath.Join(generatedDir, "conf"),
+		"dockerfile-node": filepath.Join(generatedDir, "conf"),
 
-		"go-actions-ci":   ".github/workflows",
-		"node-actions-ci": ".github/workflows",
+		"actions-ci-go":   ".github/workflows",
+		"actions-ci-node": ".github/workflows",
 
-		"docker-actions-cd": ".github/workflows",
+		"actions-cd-docker": ".github/workflows",
 	}
 
 	subFS, err := fs.Sub(templatesFS, templateEmbedDirectory)

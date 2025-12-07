@@ -1,0 +1,31 @@
+services:
+{{range .Service}}  {{.}}
+    networks:
+    - proxy_network
+    - {{ $.ProjectName }}_network
+
+{{end}}
+  app:
+    image: {{ .ProjectName }}:latest
+    container_name: {{ .ProjectName }}
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:{{ .AppPort }}/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+    networks:
+    - proxy_network
+    - {{ .ProjectName }}_network
+    
+
+volumes:
+{{range .Volumes}}  {{.}}:
+{{end}}
+
+networks:
+  proxy_network:
+    external: true
+
+  {{ .ProjectName }}_network:
+    driver: bridge
+    internal: true # blocks all external access

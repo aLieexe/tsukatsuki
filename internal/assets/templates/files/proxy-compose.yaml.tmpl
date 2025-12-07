@@ -1,0 +1,12 @@
+services:
+  {{ .Proxy }}
+
+volumes:
+  {{range .Volumes}}  {{.}}:
+  {{end}}
+
+networks:
+  proxy_network:
+    name: proxy_network
+    driver: bridge
+    enable_ipv6: true
