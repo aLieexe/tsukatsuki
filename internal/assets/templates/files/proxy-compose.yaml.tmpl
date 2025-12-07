@@ -4,7 +4,6 @@ services:
 volumes:
   {{range .Volumes}}  {{.}}:
   {{end}}
-
 networks:
   proxy_network:
     name: proxy_network

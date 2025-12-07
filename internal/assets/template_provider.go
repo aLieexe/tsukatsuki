@@ -31,10 +31,11 @@ var templatesFS embed.FS
 
 // volume configurations for compose presets,
 var composeVolumeConfig = map[string][]string{
-	"caddy":      {"caddy_data", "caddy_config"},
-	"nginx":      nil,
-	"postgresql": {"postgresql_data"},
-	"redis":      {"redis_data"},
+	"caddy":       {"caddy_data", "caddy_config"},
+	"caddy-proxy": {"caddy_data", "caddy_config"},
+	"nginx":       nil,
+	"postgresql":  {"postgresql_data"},
+	"redis":       {"redis_data"},
 }
 
 const (

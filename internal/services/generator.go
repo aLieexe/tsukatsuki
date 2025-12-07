@@ -97,9 +97,11 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		Volumes       []string
 		ProxyTemplate string
 	}{
-		Volumes:       []string{},
+		Volumes:       preset.Volume,
 		ProxyTemplate: proxyPreset,
 	}
+
+	fmt.Println(preset.Volume)
 
 	proxyComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
 
