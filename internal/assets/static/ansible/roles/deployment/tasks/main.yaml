@@ -22,5 +22,5 @@
   community.docker.docker_compose_v2:
     project_src: "{{ remote_project_path }}/{{ generated_folder_name }}/conf" 
     files: 
-      - "{{ compose_file_name }}"
+      - "{{ project_compose_file_name }}"
     state: present

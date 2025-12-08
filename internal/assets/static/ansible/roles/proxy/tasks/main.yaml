@@ -1,0 +1,23 @@
+- name: Sync the proxy folder in project into the proxy folder
+  ansible.posix.synchronize:
+    src: "{{ local_project_path }}/{{ generated_folder_name }}/proxy"
+    dest: "{{ remote_proxy_path }}"
+    rsync_opts:
+      - "--no-motd"
+      - "--recursive"
+      - "--times"
+      - "--links"
+      - "--compress"
+  become: false
+
+- name: Make sure proxy is started
+  community.docker.docker_compose_v2:
+    project_src: "{{ remote_proxy_path }}/proxy" 
+    files: 
+      - "{{ proxy_compose_file_name }}"
+    state: present
+
+- name: Gracefully reload the proxy
+  community.docker.docker_container_exec:
+    container: caddy-proxy
+    command: caddy reload --config /etc/caddy/Caddyfile

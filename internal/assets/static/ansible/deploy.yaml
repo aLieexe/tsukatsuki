@@ -15,4 +15,5 @@
 - hosts: deploy
   become: false
   roles:
+  - proxy
   - deployment

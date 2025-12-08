@@ -72,7 +72,7 @@ func NewAppConfig() *AppConfig {
 
 		ServerIP:  "127.0.0.1",
 		SetupUser: "user1",
-		SSHPort:   2222,
+		SSHPort:   22,
 		Security:  false,
 
 		AppSiteAddress: "placeholder.com",

@@ -30,15 +30,15 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		}
 	}
 
-	extraConfigFiles := []string{app.Proxy, fmt.Sprintf("%s-dockerfile", app.Runtime), "rsync-ignore"}
+	extraConfigFiles := []string{fmt.Sprintf("dockerfile-%s", app.Runtime), "rsync-ignore"}
 
 	operations := []struct {
 		name string
 		fn   func() error
 	}{
 		// This should be fine for now, can add the service later
-		{"compose generation", func() error {
-			return app.GenerateCompose()
+		{"project compose generation", func() error {
+			return app.GenerateProjectCompose()
 		}},
 		{"ansible files generation", func() error {
 			return app.GenerateAnsibleFiles(extraRoles)
@@ -46,7 +46,9 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		{"configuration files generation", func() error {
 			return app.GenerateConfigurationFiles(extraConfigFiles)
 		}},
-
+		{"proxy files generation", func() error {
+			return app.GenerateProxyFiles()
+		}},
 		{"github actions files generation", func() error {
 			return app.GenerateActionsFiles()
 		}},
@@ -61,20 +63,113 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 	return nil
 }
 
+func (app *AppConfig) GenerateProxyFiles() error {
+	const composeTemplateName = "compose-proxy"
+	proxyPresetCode := fmt.Sprintf("%s-proxy", app.Proxy)
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
+	if err != nil {
+		return err
+	}
+	presetProvider := templateProvider.GetComposePresetTemplates()
+	preset := presetProvider[proxyPresetCode]
+
+	proxyPresetTmpl, err := template.New(proxyPresetCode).Option("missingkey=error").Parse(string(preset.Content))
+	if err != nil {
+		return fmt.Errorf("parsing template %s: %w", composeTemplateName, err)
+	}
+
+	presetTemplateData := struct {
+		DockerImage string
+	}{
+		DockerImage: app.ProxyImage,
+	}
+
+	var buffer bytes.Buffer
+	err = proxyPresetTmpl.Execute(&buffer, presetTemplateData)
+	if err != nil {
+		return fmt.Errorf("executing template %s: %w", proxyPresetCode, err)
+	}
+
+	// All the service and volumes listed previously
+	proxyPreset := string(buffer.String())
+
+	composeTemplateData := struct {
+		Volumes       []string
+		ProxyTemplate string
+	}{
+		Volumes:       preset.Volume,
+		ProxyTemplate: proxyPreset,
+	}
+
+	fmt.Println(preset.Volume)
+
+	proxyComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
+
+	err = createOutputDirectory(proxyComposeTemplate.OutputDir)
+	if err != nil {
+		return err
+	}
+
+	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(proxyComposeTemplate.Content))
+	if err != nil {
+		return fmt.Errorf("parsing template %s: %w", proxyComposeTemplate.Filename, err)
+	}
+
+	// create output file
+	filePath := filepath.Join(proxyComposeTemplate.OutputDir, proxyComposeTemplate.Filename)
+	file, err := os.Create(filePath)
+	if err != nil {
+		return fmt.Errorf("creating file %s: %w", filePath, err)
+	}
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	err = tmpl.Execute(file, composeTemplateData)
+	if err != nil {
+		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
+	}
+
+	proxyEntryCode := fmt.Sprintf("proxy-%s-entry", app.Proxy)
+	proxyProjectCode := fmt.Sprintf("proxy-%s-project", app.Proxy)
+
+	fileTemplate := templateProvider.GetFileTemplates()[proxyEntryCode]
+	if err := generateStandardTemplate(&fileTemplate, proxyEntryCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", proxyEntryCode, err)
+	}
+
+	fileTemplate = templateProvider.GetFileTemplates()[proxyProjectCode]
+
+	err = createOutputDirectory(fileTemplate.OutputDir)
+	if err != nil {
+		return err
+	}
+
+	if err := generateStandardTemplate(&fileTemplate, proxyProjectCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", proxyProjectCode, err)
+	}
+	return nil
+}
+
 // TODO: Refactor it to be able to do array, Planning on changing the github stuff into multi choice instead
 func (app *AppConfig) GenerateActionsFiles() error {
 	if app.GithubActions == nil {
 		return nil
 	}
 
-	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
 	if err != nil {
 		return err
 	}
 
 	for _, actions := range app.GithubActions {
 		if actions.Type == "actions-cd" {
-			code := fmt.Sprintf("%s-%s", "docker", actions.Type)
+			code := fmt.Sprintf("%s-%s", actions.Type, "docker")
 			fileTemplate := templateProvider.GetFileTemplates()[code]
 
 			if err := generateStandardTemplate(&fileTemplate, code, app); err != nil {
@@ -82,7 +177,7 @@ func (app *AppConfig) GenerateActionsFiles() error {
 			}
 			continue
 		}
-		code := fmt.Sprintf("%s-%s", app.Runtime, actions.Type)
+		code := fmt.Sprintf("%s-%s", actions.Type, app.Runtime)
 		fileTemplate := templateProvider.GetFileTemplates()[code]
 
 		if err := generateStandardTemplate(&fileTemplate, code, app); err != nil {
@@ -113,7 +208,7 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 		playbookData.Roles = append(playbookData.Roles, "security")
 	}
 
-	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
 	if err != nil {
 		return fmt.Errorf("initializing template provider %s: %w", app.OutputDir, err)
 	}
@@ -179,7 +274,7 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 }
 
 func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error {
-	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
 	if err != nil {
 		return err
 	}
@@ -193,12 +288,12 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 	return nil
 }
 
-func (app *AppConfig) GenerateCompose() error {
+func (app *AppConfig) GenerateProjectCompose() error {
 	fmt.Println(app.EntryPoint)
-	// Mapping name of docker-compose.yml in template_provider.go
-	const composeTemplateName = "docker-compose"
+	// Mapping name of project-compose.yaml in template_provider.go
+	const composeTemplateName = "compose-project"
 
-	templateProvider, err := assets.NewTemplateProvider(app.OutputDir)
+	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
 	if err != nil {
 		return err
 	}
@@ -243,9 +338,7 @@ func (app *AppConfig) GenerateCompose() error {
 	}
 
 	// Combine services and proxy, why do i seperate this again?
-	services := []Service{
-		{Name: app.Proxy, DockerImage: app.ProxyImage},
-	}
+	services := []Service{}
 
 	for _, service := range app.Services {
 		services = append(services, Service{
