@@ -18,9 +18,12 @@ services:
     - {{ .ProjectName }}_network
     
 
+{{- if .Volumes }}
 volumes:
-{{range .Volumes}}  {{.}}:
-{{end}}
+{{- range .Volumes }}
+  {{ . }}:
+{{- end }}
+{{- end }}
 
 networks:
   proxy_network:

@@ -2,8 +2,10 @@ project_name: {{ .ProjectName }}
 local_project_path: {{ .LocalPath }}
 remote_project_path: {{ .RemotePath }}
 generated_folder_name: {{ .OutputDir }}
+remote_proxy_path: /home/tsukatsuki/proxy
 ssh_key_folder_name: "key"
-compose_file_name: "docker-compose.yaml"
+project_compose_file_name: "project-compose.yaml"
+proxy_compose_file_name: "proxy-compose.yaml"
 
 new_ssh_port: {{ .SSHPort }}
 

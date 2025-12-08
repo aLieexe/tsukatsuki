@@ -113,7 +113,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string, projectName s
 
 	outputDirMappings := map[string]string{
 		"proxy-caddy-entry":   filepath.Join(generatedDir, "proxy"),
-		"proxy-caddy-project": filepath.Join(generatedDir, "proxy"),
+		"proxy-caddy-project": filepath.Join(generatedDir, "proxy/sites"),
 
 		"rsync-ignore": filepath.Join(generatedDir, "conf"),
 

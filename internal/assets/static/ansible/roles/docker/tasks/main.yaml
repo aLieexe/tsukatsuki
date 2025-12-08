@@ -68,10 +68,10 @@
     group: "{{ hostvars['deploy_user'].ansible_user }}"
     mode: '0644'
 
-- name: ensure docker service is started and enabled
+- name: ensure docker service is restarted and enabled
   ansible.builtin.service:
     name: docker
-    state: started
+    state: restarted
     enabled: yes
 
 - name: Get docker service status

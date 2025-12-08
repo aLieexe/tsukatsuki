@@ -144,6 +144,12 @@ func (app *AppConfig) GenerateProxyFiles() error {
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()[proxyProjectCode]
+
+	err = createOutputDirectory(fileTemplate.OutputDir)
+	if err != nil {
+		return err
+	}
+
 	if err := generateStandardTemplate(&fileTemplate, proxyProjectCode, app); err != nil {
 		return fmt.Errorf("generating template %s: %w", proxyProjectCode, err)
 	}
