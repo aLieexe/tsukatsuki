@@ -25,7 +25,8 @@ func GetDefaultImageMap() map[string]string {
 		"go":   "golang:1.24.4-bookworm",
 		"node": "node:25.2-bookworm-slim",
 
-		"caddy": "caddy:2.10.2-alpine",
+		"caddy":   "caddy:2.10.2-alpine",
+		"traefik": "traefik:v3.6",
 
 		"postgresql": "postgres:18.0-alpine",
 		"redis":      "redis:8.2-alpine3.22",

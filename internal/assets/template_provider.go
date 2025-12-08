@@ -31,11 +31,12 @@ var templatesFS embed.FS
 
 // volume configurations for compose presets,
 var composeVolumeConfig = map[string][]string{
-	"caddy":       {"caddy_data", "caddy_config"},
-	"caddy-proxy": {"caddy_data", "caddy_config"},
-	"nginx":       nil,
-	"postgresql":  {"postgresql_data"},
-	"redis":       {"redis_data"},
+	"caddy":         {"caddy_data", "caddy_config"},
+	"caddy-proxy":   {"caddy_data", "caddy_config"},
+	"traefik-proxy": {"traefik_data"},
+	"nginx":         nil,
+	"postgresql":    {"postgresql_data"},
+	"redis":         {"redis_data"},
 }
 
 const (
@@ -76,7 +77,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string, projectName s
 		"ansible-setup":     "ansible/setup.yaml.tmpl",
 		"ansible-vars":      "ansible/all.yaml.tmpl",
 		"ansible-inventory": "ansible/inventory.ini.tmpl",
-		"ansible-molecule":  "ansible/converge.yml.tmpl",
+		"ansible-proxy":     "ansible/proxy.main.yaml.tmpl",
 
 		"dockerfile-go":   "files/go-dockerfile.tmpl",
 		"dockerfile-node": "files/node-dockerfile.tmpl",
@@ -100,7 +101,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string, projectName s
 		"ansible-setup":     "setup.yaml",
 		"ansible-vars":      "all.yaml",
 		"ansible-inventory": "inventory.ini",
-		"ansible-molecule":  "converge.yml",
+		"ansible-proxy":     "main.yaml",
 
 		"dockerfile-go":   "Dockerfile",
 		"dockerfile-node": "Dockerfile",
@@ -123,7 +124,7 @@ func (tp *TemplateProvider) loadFileTemplates(generatedDir string, projectName s
 		"ansible-setup":     filepath.Join(generatedDir, "ansible"),
 		"ansible-vars":      filepath.Join(generatedDir, "ansible/group_vars"),
 		"ansible-inventory": filepath.Join(generatedDir, "ansible"),
-		"ansible-molecule":  filepath.Join(generatedDir, "ansible/molecule/default"),
+		"ansible-proxy":     filepath.Join(generatedDir, "ansible", "roles", "proxy", "tasks"),
 
 		"dockerfile-go":   filepath.Join(generatedDir, "conf"),
 		"dockerfile-node": filepath.Join(generatedDir, "conf"),

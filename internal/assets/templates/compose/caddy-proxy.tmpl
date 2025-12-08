@@ -1,7 +1,7 @@
 caddy: 
     image: {{ .DockerImage }} 
     container_name: caddy-proxy
-    restart: unless-stopped
+    restart: always
     ports:
     - "80:80"
     - "443:443"

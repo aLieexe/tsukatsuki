@@ -96,9 +96,11 @@ func (app *AppConfig) GenerateProxyFiles() error {
 	composeTemplateData := struct {
 		Volumes       []string
 		ProxyTemplate string
+		Proxy         string
 	}{
 		Volumes:       preset.Volume,
 		ProxyTemplate: proxyPreset,
+		Proxy:         app.Proxy,
 	}
 
 	fmt.Println(preset.Volume)
@@ -133,6 +135,11 @@ func (app *AppConfig) GenerateProxyFiles() error {
 	err = tmpl.Execute(file, composeTemplateData)
 	if err != nil {
 		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
+	}
+
+	// Proxy don't need other files, only a docker compose file
+	if app.Proxy == "traefik" {
+		return nil
 	}
 
 	proxyEntryCode := fmt.Sprintf("proxy-%s-entry", app.Proxy)
@@ -192,7 +199,7 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 	const ansibleSetupCode = "ansible-setup"
 	const ansibleInventoryCode = "ansible-inventory"
 	const ansibleVarsCode = "ansible-vars"
-	const ansibleMolecule = "ansible-molecule"
+	const ansibleProxyRolesCode = "ansible-proxy"
 
 	ansibleStaticDir := "static/ansible"
 
@@ -228,9 +235,9 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 		return fmt.Errorf("generating template %s: %w", ansibleVarsCode, err)
 	}
 
-	fileTemplate = templateProvider.GetFileTemplates()[ansibleMolecule]
-	if err := generateStandardTemplate(&fileTemplate, ansibleMolecule, playbookData); err != nil {
-		return fmt.Errorf("generating template %s: %w", ansibleMolecule, err)
+	fileTemplate = templateProvider.GetFileTemplates()[ansibleProxyRolesCode]
+	if err := generateStandardTemplate(&fileTemplate, ansibleProxyRolesCode, app); err != nil {
+		return fmt.Errorf("generating template %s: %w", ansibleProxyRolesCode, err)
 	}
 
 	staticProvider := assets.NewStaticProvider(app.OutputDir)
@@ -259,15 +266,6 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 		if err := copyDir(src, dst); err != nil {
 			return fmt.Errorf("copying %s, in %s to %s: %w", role, src, dst, err)
 		}
-	}
-
-	// Molecule
-	moleculeSrcDir := filepath.Join(ansibleStaticDir, "/molecule")
-	moleculeDstDir := filepath.Join(app.OutputDir, "ansible", "molecule")
-
-	err = copyDir(moleculeSrcDir, moleculeDstDir)
-	if err != nil {
-		return fmt.Errorf("copying molecule, in %s to %s: %w", moleculeSrcDir, moleculeDstDir, err)
 	}
 
 	return nil
@@ -326,15 +324,19 @@ func (app *AppConfig) GenerateProjectCompose() error {
 
 	// Combine all the needed data, that is the services and the volumes needed for said service to function
 	templateData := struct {
-		Service     []string
-		Volumes     []string
-		ProjectName string
-		AppPort     int
+		Service        []string
+		Volumes        []string
+		ProjectName    string
+		AppPort        int
+		Proxy          string
+		AppSiteAddress string
 	}{
-		Service:     []string{},
-		Volumes:     []string{},
-		ProjectName: app.ProjectName,
-		AppPort:     app.AppPort,
+		Service:        []string{},
+		Volumes:        []string{},
+		ProjectName:    app.ProjectName,
+		AppPort:        app.AppPort,
+		Proxy:          app.Proxy,
+		AppSiteAddress: app.AppSiteAddress,
 	}
 
 	// Combine services and proxy, why do i seperate this again?

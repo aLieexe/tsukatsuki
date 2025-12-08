@@ -1,0 +1,26 @@
+traefik:
+    container_name: traefik-proxy
+    image: {{ .DockerImage }}
+    restart: always
+    command:
+    - "--api.dashboard=true"
+    - "--api.debug=true"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.web.address=:80"
+    - "--entrypoints.web.http.redirections.entryPoint.to=websecure"
+    - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    - "--entrypoints.websecure.forwardedHeaders.insecure=true"
+    - "--entrypoints.websecure.address=:443"
+    - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
+    - "--certificatesresolvers.mytlschallenge.acme.email=admin@example.com"
+    - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
+    - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    ports:
+    - "80:80"
+    - "443:443"
+    volumes:
+    - traefik_data:/letsencrypt
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+    - proxy_network

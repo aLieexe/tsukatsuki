@@ -82,6 +82,11 @@ func NewSelectionsSchema() *ChoiceQuestionSchema {
 						Description: "A modern, automated web server written in Go, with built-in HTTPS.",
 						Value:       "caddy",
 					},
+					{
+						Title:       "Traefik",
+						Description: "A leading modern open source reverse proxy and ingress controller that makes deploying services and APIs easy.",
+						Value:       "traefik",
+					},
 				},
 			},
 
