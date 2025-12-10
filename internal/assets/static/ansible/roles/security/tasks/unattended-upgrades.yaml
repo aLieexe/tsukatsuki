@@ -1,0 +1,40 @@
+# References
+# https://benheater.com/configuring-unattended-upgrades-on-debian/
+# https://wiki.debian.org/PeriodicUpdates
+
+- name: Copy unattended-upgrades configuration files in place.
+  ansible.builtin.template:
+    src: "{{ item }}.j2"
+    dest: "/etc/apt/apt.conf.d/{{ item }}"
+    owner: root
+    group: root
+    mode: 644
+  with_items:
+  - 20auto-upgrades
+  - 50unattended-upgrades
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+
+- name: Ensure unattended-upgrades is running
+  ansible.builtin.assert:
+    that:
+    - "'unattended-upgrades.service' in ansible_facts.services"
+    - ansible_facts.services['unattended-upgrades.service'].state == 'running'
+    fail_msg: "unattended-upgrades not running / missing. Showing details below:"
+    success_msg: "unattended-upgrades is active and running."
+  register: check_result
+  ignore_errors: true
+
+- name: Show unattended-upgrades logs
+  ansible.builtin.command: journalctl -u unattended-upgrades.service --no-pager -n 50
+  register: unattended_logs
+  changed_when: false
+  when: check_result is failed
+
+- name: Display unattended-upgrades logs
+  ansible.builtin.debug:
+    var: unattended_logs.stdout_lines
+  when: check_result is failed
+

@@ -1,0 +1,66 @@
+# https://github.com/k4yt3x/sshd_config/blob/master/sshd_config
+# https://documentation.ubuntu.com/server/how-to/security/openssh-server/
+# https://github.com/dev-sec/ansible-collection-hardening/blob/master/roles/ssh_hardening/templates/opensshd.conf.j2
+# https://linux-audit.com/ssh/audit-and-harden-your-ssh-configuration/
+
+- name: Ensure /etc/ssh exists
+  ansible.builtin.file:
+    path: /etc/ssh
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Ensure backup directory exists
+  ansible.builtin.file:
+    path: /etc/ssh/bak
+    state: directory
+    mode: '0755'
+
+- name: Backup sshd_config before editing
+  ansible.builtin.copy:
+    src: /etc/ssh/sshd_config
+    dest: /etc/ssh/bak/sshd_config.bak
+    remote_src: yes
+  tags:
+  - molecule-idempotence-notest
+
+- name: Deploy sshd_config
+  ansible.builtin.template:
+    src: "sshd_config.j2"
+    dest: "/etc/ssh/sshd_config"
+
+- name: Force systemd to reread configs (Ansible 2.4 and above)
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+- name: Restart ssh service
+  ansible.builtin.systemd_service:
+    name: ssh.service
+    state: restarted
+  tags:
+  - molecule-idempotence-notest
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+  tags:
+  - molecule-idempotence-notest
+
+- name: Ensure SSH service is running
+  ansible.builtin.assert:
+    that:
+    - "'ssh.service' in ansible_facts.services"
+    - ansible_facts.services['ssh.service'].state == 'running'
+    fail_msg: "SSH service is not running or missing. Showing details below:"
+    success_msg: "SSH service is active and running."
+  register: ssh_check_result
+  ignore_errors: true
+  tags:
+  - molecule-idempotence-notest
+
+- name: Print SSH service details if check failed
+  ansible.builtin.debug:
+    var: ansible_facts.services['ssh.service']
+  when: ssh_check_result is failed
+  tags:
+  - molecule-idempotence-notest

@@ -29,6 +29,7 @@ type UserInput struct {
 	AppEntryPoint  *textinput.Output
 	SetupUser      *textinput.Output
 	SSHPort        *textinput.Output
+	ACMEEmail      *textinput.Output
 
 	Proxy    *singleselect.Output
 	Runtime  *singleselect.Output
@@ -72,6 +73,7 @@ func runInitCommand(cmd *cobra.Command) {
 		AppSiteAddress: &textinput.Output{},
 		SetupUser:      &textinput.Output{},
 		SSHPort:        &textinput.Output{},
+		ACMEEmail:      &textinput.Output{},
 
 		Proxy:    &singleselect.Output{},
 		Runtime:  &singleselect.Output{},
@@ -134,8 +136,6 @@ func runInitCommand(cmd *cobra.Command) {
 		logger.Error(fmt.Sprintf("error receiving input: %s", err))
 		os.Exit(1)
 	}
-
-	fmt.Println(userInput.AppEntryPoint.Value)
 
 	cfg.EntryPoint = userInput.AppEntryPoint.Value
 	cfg.ExitCLI(teaProgram)
@@ -208,6 +208,15 @@ func runInitCommand(cmd *cobra.Command) {
 		logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
 		os.Exit(1)
 	}
+
+	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.ACMEEmail, questionSchema.Questions["acme-email"], cfg, nil))
+	if _, err := teaProgram.Run(); err != nil {
+		logger.Error(fmt.Sprintf("error receiving input: %s", err))
+		os.Exit(1)
+	}
+
+	cfg.ACMEEmail = userInput.ACMEEmail.Value
+	cfg.ExitCLI(teaProgram)
 
 	// Services Multi-choice question
 	teaProgram = tea.NewProgram(multiselect.InitializeMultiSelectModel(userInput.Services, selectionSchema.Questions["services"], cfg))

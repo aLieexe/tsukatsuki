@@ -1,0 +1,7 @@
+package_needed:
+  - git
+  - gnupg
+  - ufw
+  - curl
+  - rsync
+  - systemd-timesyncd

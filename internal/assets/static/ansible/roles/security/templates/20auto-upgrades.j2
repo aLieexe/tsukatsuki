@@ -1,2 +1,11 @@
-APT::Periodic::Update-Package-Lists "1";
-APT::Periodic::Unattended-Upgrade "1";
+// How often (in days) to run apt update
+APT::Periodic::Update-Package-Lists "{{ auto_upgrades_update_interval }}";
+
+// How often (in days) to download new packages
+APT::Periodic::Download-Upgradeable-Packages "{{ auto_upgrades_download_interval }}";
+
+// How often (in days) to run unattended-upgrades
+APT::Periodic::Unattended-Upgrade "{{ auto_upgrades_upgrade_interval }}";
+
+// How often (in days) to apt clean
+APT::Periodic::AutocleanInterval "{{ auto_upgrades_autoclean_interval }}";

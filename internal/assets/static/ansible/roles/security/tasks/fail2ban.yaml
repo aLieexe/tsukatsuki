@@ -1,0 +1,46 @@
+# https://gist.github.com/petarnikolovski/e24f9bfda6e1277640e376f8a2ecfaef
+# https://jmoore53.com/code/infrastructure/docker/2023/10/25/Fail2Ban-POC.html
+# https://gist.github.com/yourdesigncoza/5459534
+# https://www.linode.com/docs/guides/using-fail2ban-to-secure-your-server-a-tutorial/
+
+
+- name: Ensure /etc/fail2ban exists
+  ansible.builtin.file:
+    path: /etc/fail2ban
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+
+- name: Deploy sshd_config
+  ansible.builtin.template:
+    src: "jail.local.j2"
+    dest: "/etc/fail2ban/jail.local"
+
+- name: Restart fail2ban
+  ansible.builtin.systemd_service:
+    name: fail2ban.service
+    state: restarted
+  tags:
+  - molecule-idempotence-notest
+
+
+- name: Gather service facts
+  ansible.builtin.service_facts:
+
+
+- name: Ensure fail2ban is running
+  ansible.builtin.assert:
+    that:
+    - "'fail2ban.service' in ansible_facts.services"
+    - ansible_facts.services['fail2ban.service'].state == 'running'
+    fail_msg: "fail2ban not running / missing. Showing details below:"
+    success_msg: "fail2ban is active and running."
+  register: check_result
+  ignore_errors: true
+
+- name: fail2ban failure details
+  ansible.builtin.debug:
+    var: ansible_facts.services['fail2ban.service']
+  when: check_result is failed

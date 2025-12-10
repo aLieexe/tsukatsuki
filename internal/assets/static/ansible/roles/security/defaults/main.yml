@@ -1,13 +1,42 @@
-new_ssh_port: 2222
+# Fail2ban Configuration
+fail2ban_bantime: "30m"
+fail2ban_findtime: "10m"
+fail2ban_maxretry: 5
+fail2ban_ssh_maxretry: 3
+fail2ban_ssh_bantime: 600
 
-package_needed: 
-  - openssh-server
-  - unattended-upgrades
-  - ufw
-  - fail2ban
-  - selinux-basics
-  - python3-selinux
-  - python3-semanage
-  - selinux-policy-default
-  - policycoreutils
-  - auditd
+# Unattended Upgrades Configuration
+unattended_upgrades_reboot: true
+unattended_upgrades_reboot_time: "02:00"
+unattended_upgrades_remove_unused: true
+unattended_upgrades_reboot_with_users: true
+
+# Auto Upgrades Configuration
+auto_upgrades_update_interval: "1"
+auto_upgrades_download_interval: "1"
+auto_upgrades_upgrade_interval: "1"
+auto_upgrades_autoclean_interval: "7"
+
+# SSH Configuration Options
+ssh_address_family: "any"  # any, inet (IPv4), inet6 (IPv6)
+ssh_permit_root_login: no
+ssh_password_authentication: no
+ssh_pubkey_authentication: yes
+ssh_max_auth_tries: 3
+ssh_log_level: "VERBOSE" # QUIET, FATAL, ERROR, INFO, VERBOSE, DEBUG, DEBUG1, DEBUG2, DEBUG3
+ssh_allow_tcp_forwarding: no
+ssh_allow_agent_forwarding: no
+ssh_x11_forwarding: no
+ssh_print_motd: no
+ssh_use_dns: no
+ssh_client_alive_count_max: 2
+ssh_max_sessions: 2
+
+
+# UFW Ports Configuration
+ufw_allowed_ports:
+  - { rule: 'allow', port: "{{ ssh_new_port }}", proto: 'tcp' }  # SSH
+  - { rule: 'allow', port: 80, proto: 'tcp' }  # HTTP
+  - { rule: 'allow', port: 443, proto: 'tcp' }  # HTTPS
+  - { rule: 'allow', port: 123, proto: 'udp' }  # NTP
+  - { rule: 'deny', port: 22, proto: 'tcp' }  # Old SSH Port

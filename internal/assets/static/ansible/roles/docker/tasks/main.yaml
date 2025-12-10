@@ -4,18 +4,14 @@
 
 - name: Ensures docker dependency is installed
   ansible.builtin.apt:
-    name: 
-      - ca-certificates
-      - curl
-      - gnupg
-      - lsb-release
+    pkg: "{{ docker_dependency_pkg }}"
+    state: present
 
 - name: Create direactory for apt keyrings
   file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
-
 
 - name: Download Docker's official GPG key
   ansible.builtin.get_url:
@@ -33,7 +29,6 @@
 - name: Debug
   debug:
     msg: "deb [arch={{ docker_apt_arch }} signed-by=/etc/apt/keyrings/docker.asc] {{ docker_repo_url }}/{{ docker_apt_ansible_distribution | lower }} {{ ansible_distribution_release }} stable"
-
 
 - name: Add Docker to apt repo
   ansible.builtin.apt_repository:
@@ -67,12 +62,7 @@
     owner: "{{ hostvars['deploy_user'].ansible_user }}"
     group: "{{ hostvars['deploy_user'].ansible_user }}"
     mode: '0644'
-
-- name: ensure docker service is restarted and enabled
-  ansible.builtin.service:
-    name: docker
-    state: restarted
-    enabled: yes
+  notify: Restart docker
 
 - name: Get docker service status
   ansible.builtin.command: systemctl is-active docker
