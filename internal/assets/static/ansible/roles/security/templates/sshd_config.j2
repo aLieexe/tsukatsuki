@@ -1,14 +1,15 @@
 # SSH server listening address and port
-Port {{ new_ssh_port }}
+Port {{ ssh_new_port }}
 #ListenAddress 0.0.0.0
 #ListenAddress ::
 
+{% if ssh_address_family == "inet" %}
 # only listen to IPv4
-#AddressFamily inet
-
+AddressFamily inet
+{% elif ssh_address_family == "inet6" %}
 # only listen to IPv6
-#AddressFamily inet6
-
+AddressFamily inet6
+{% endif %}
 
 AcceptEnv LANG LC_CTYPE LC_NUMERIC LC_TIME LC_COLLATE LC_MONETARY LC_MESSAGES
 AcceptEnv LC_PAPER LC_NAME LC_ADDRESS LC_TELEPHONE LC_MEASUREMENT
@@ -17,19 +18,18 @@ AcceptEnv XMODIFIERS
 
 # look 9/10 time we aint gonna need this
 # turn it on if want to use the server as a SSH Bastion / to jump host or whtever
-AllowAgentForwarding no
+AllowAgentForwarding {{ ssh_allow_agent_forwarding | ternary('yes', 'no') }}
 
 # Disable other kind of forwarding as usually not needed
-AllowTcpForwarding no
+AllowTcpForwarding {{ ssh_allow_tcp_forwarding | ternary('yes', 'no') }}
 AllowStreamLocalForwarding no
 DisableForwarding yes
 
 # Suppress MOTD (Message of The Day), optional tbh
-PrintMotd no
+PrintMotd {{ ssh_print_motd | ternary('yes', 'no') }}
 
 # Disable X11 forwarding since it is not necessary
-X11Forwarding no
-
+X11Forwarding {{ ssh_x11_forwarding | ternary('yes', 'no') }}
 
 # Enable / Disable these two as needed
 # Permit only specific user to login
@@ -38,33 +38,31 @@ X11Forwarding no
 # Permit only users within the specified groups to login
 #AllowGroups dev ops
 
-
-
-
-
-
 # This force login to ONLY use public key, disable all other fallback
 AuthenticationMethods publickey
-PasswordAuthentication no
+PasswordAuthentication {{ ssh_password_authentication | ternary('yes', 'no') }}
 UsePAM no
 
 # Most systems don't have this configured, so just turn it off
 ChallengeResponseAuthentication no
 
 # Prevent brute force attacks
-MaxAuthTries 3
+MaxAuthTries {{ ssh_max_auth_tries }}
+
+# Controls how many times sshd will allow a client to miss keepalive responses before disconnecting
+ClientAliveCountMax {{ ssh_client_alive_count_max }}
+
+# Controls how many open channels (subsessions) a single SSH connection can create.
+MaxSessions {{ ssh_max_sessions }} 
 
 # Prevent empty password, avoids unintentional open accounts
 PermitEmptyPasswords no
 
 # Prevent root from being logged in via SSH
-PermitRootLogin no
+PermitRootLogin {{ ssh_permit_root_login | ternary('yes', 'no') }}
 
 # Enable pubkey authentication
-PubkeyAuthentication yes
-
-
-
+PubkeyAuthentication {{ ssh_pubkey_authentication | ternary('yes', 'no') }}
 
 # Enforce server to only use SSH protocol version 2
 Protocol 2
@@ -73,4 +71,10 @@ Protocol 2
 TCPKeepAlive no
 
 # Prevents DNS spoofing issues.
-UseDNS no
+UseDNS {{ ssh_use_dns | ternary('yes', 'no') }}
+
+# Easier Audit
+LogLevel {{ ssh_log_level }}
+
+# Compression
+Compression no

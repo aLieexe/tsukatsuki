@@ -12,15 +12,9 @@
     type: rsa
     comment: "ansible-generated"
     size: 2048
+    mode: '0600'
   delegate_to: localhost
   become: false
-
-- name: Fix SSH key ownership
-  file:
-    path: "{{ playbook_dir }}/key/{{ ansible_user }}"
-  delegate_to: localhost
-  become: false
-  run_once: true
 
 - name: Deploy the generated public key to remote hosts
   ansible.posix.authorized_key:

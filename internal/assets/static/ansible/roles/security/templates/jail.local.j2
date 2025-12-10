@@ -1,0 +1,32 @@
+[DEFAULT]
+
+# ignoreip = 127.0.0.1/8 ::1 STATIC_IP
+
+banaction = ufw
+
+# 30m = 30 minutes, 1h = 1 hour, 1d = 1 day
+bantime  = {{ fail2ban_bantime }}
+
+findtime = {{ fail2ban_findtime }}
+maxretry = {{ fail2ban_maxretry }}
+
+# This ensures bans are restored after a reboot.
+dbfile = /config/fail2ban/fail2ban.sqlite3
+
+[ssh]
+enabled = true
+port    = {{ ssh_new_port }} 
+filter  = sshd
+backend = systemd
+# logpath = /var/log/auth.log
+maxretry = {{ fail2ban_ssh_maxretry }}
+bantime = {{ fail2ban_ssh_bantime }}
+
+[sshd]
+enabled = true
+port    = {{ ssh_new_port }} 
+filter  = sshd
+backend = systemd
+# logpath = /var/log/auth.log
+maxretry = {{ fail2ban_ssh_maxretry }}
+bantime = {{ fail2ban_ssh_bantime }}

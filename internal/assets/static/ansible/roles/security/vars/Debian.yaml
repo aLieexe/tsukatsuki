@@ -1,0 +1,23 @@
+package_needed:
+- openssh-server
+- unattended-upgrades
+- ufw
+- fail2ban
+- curl
+- apt-listchanges
+- apt-show-versions
+- debsums
+- needrestart
+
+# Mostly for development
+package_to_remove: 
+- gcc
+- g++
+- build-essential
+- binfmt-support
+
+apparmor_package:
+- apparmor
+- apparmor-utils
+- apparmor-profiles
+- apparmor-profiles-extra

@@ -1,6 +1,0 @@
-- name: Restart caddy container
-  community.docker.docker_compose_v2:
-    project_src: '{{ local_project_path }}'
-    state: restarted
-    services:
-      - caddy

@@ -1,0 +1,24 @@
+- name: Configure default incoming/outgoing rules with UFW
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+    state: enabled
+  loop:
+  - { direction: outgoing, policy: allow }
+  - { direction: incoming, policy: deny }
+
+- name: Configure open ports with UFW
+  community.general.ufw:
+    rule: "{{ item.rule }}"
+    port: "{{ item.port }}"
+    proto: "{{ item.proto }}"
+  loop: "{{ ufw_allowed_ports }}"
+  tags:
+  - molecule-idempotence-notest
+
+- name: Update ansible_port for this host
+  ansible.builtin.set_fact:
+    ansible_port: "{{ ssh_new_port }}"
+
+- name: Reconnect to host with new port
+  ansible.builtin.meta: reset_connection

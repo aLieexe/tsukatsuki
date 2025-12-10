@@ -5,25 +5,22 @@
 
 - name: Install essential packages
   ansible.builtin.apt:
-    name:
-    - git
-    - gnupg
-    - make
-    - ufw
-    - curl
-    - rsync
+    pkg: "{{ package_needed }}"
     state: present
-
-- name: Ensure systemd-timesyncd is installed
-  ansible.builtin.apt:
-    name: systemd-timesyncd
-    state: present
-  become: true
 
 - name: Enable timedatectl ntp
   ansible.builtin.service:
     name: systemd-timesyncd.service
     enabled: yes
+
+- name: Configure default incoming/outgoing rules with UFW
+  community.general.ufw:
+    direction: "{{ item.direction }}"
+    policy: "{{ item.policy }}"
+    state: enabled
+  loop:
+  - { direction: outgoing, policy: allow }
+  - { direction: incoming, policy: deny }
 
 - name: Configure UFW to allow SSH, HTTP, and HTTPS
   community.general.ufw:
@@ -34,8 +31,6 @@
   - '80'
   - '443'
   - '22'
-  tags:
-    - molecule-idempotence-notest
 
 - name: Enable UFW
   community.general.ufw:
@@ -81,7 +76,6 @@
     mode: '0755'
   become: false
   delegate_to: localhost
-
 
 - name: Generate SSH key for deploy_user
   community.crypto.openssh_keypair:

@@ -1,0 +1,9 @@
+- name: Install AppArmor package
+  ansible.builtin.package:
+    pkg: "{{ apparmor_package }}"
+    state: present
+
+- name: Enable AppArmor
+  ansible.builtin.shell: sudo aa-enforce /etc/apparmor.d/* 2>/dev/null || true
+  tags:
+  - molecule-idempotence-notest
