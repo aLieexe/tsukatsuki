@@ -37,7 +37,7 @@ func NewQuestionSchema() *QuestionSchema {
 
 			"app-port": {
 				Header:      "In what port is your application running",
-				Placeholder: "6969",
+				Placeholder: "5500",
 			},
 
 			"app-entrypoint": {
@@ -57,12 +57,17 @@ func NewQuestionSchema() *QuestionSchema {
 
 			"server-port": {
 				Header:      "What is the custom SSH Port you want to be exposed",
-				Placeholder: "222",
+				Placeholder: "2222",
 			},
 
 			"proxy-endpoint": {
 				Header:      "What is the endpoint that will be used for this App (enter to use ip)",
 				Placeholder: "subdomain.placeholder.com",
+			},
+
+			"acme-email": {
+				Header:      "What email should be used for ACME/Let's Encrypt certificates",
+				Placeholder: "admin@placeholder.com",
 			},
 		},
 	}

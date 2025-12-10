@@ -80,8 +80,10 @@ func (app *AppConfig) GenerateProxyFiles() error {
 
 	presetTemplateData := struct {
 		DockerImage string
+		ACMEEmail   string
 	}{
 		DockerImage: app.ProxyImage,
+		ACMEEmail:   app.ACMEEmail,
 	}
 
 	var buffer bytes.Buffer
@@ -102,8 +104,6 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		ProxyTemplate: proxyPreset,
 		Proxy:         app.Proxy,
 	}
-
-	fmt.Println(preset.Volume)
 
 	proxyComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
 
@@ -287,7 +287,6 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 }
 
 func (app *AppConfig) GenerateProjectCompose() error {
-	fmt.Println(app.EntryPoint)
 	// Mapping name of project-compose.yaml in template_provider.go
 	const composeTemplateName = "compose-project"
 

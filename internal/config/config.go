@@ -28,6 +28,7 @@ type AppConfigYaml struct {
 		Type        string `yaml:"type"`
 		Domain      string `yaml:"domain"`
 		DockerImage string `yaml:"docker_image"`
+		ACMEEmail   string `yaml:"acme_email"`
 	} `yaml:"proxy"`
 
 	Services []struct {

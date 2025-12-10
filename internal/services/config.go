@@ -51,6 +51,7 @@ type AppConfig struct {
 	AppSiteAddress string
 	Proxy          string
 	ProxyImage     string
+	ACMEEmail      string
 
 	Services []Service
 
@@ -75,6 +76,7 @@ func NewAppConfig() *AppConfig {
 		SetupUser: "user1",
 		SSHPort:   22,
 		Security:  false,
+		ACMEEmail: "admin@placeholder.com",
 
 		AppSiteAddress: "placeholder.com",
 		Proxy:          "caddy",
@@ -112,6 +114,7 @@ func (app *AppConfig) SaveConfigToFile() error {
 	cfg.Proxy.Domain = app.AppSiteAddress
 	cfg.Proxy.Type = app.Proxy
 	cfg.Proxy.DockerImage = app.ProxyImage
+	cfg.Proxy.ACMEEmail = app.ACMEEmail
 
 	for _, service := range app.Services {
 		cfg.Services = append(cfg.Services, struct {
@@ -170,6 +173,7 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 		Proxy:          yamlConfig.Proxy.Type,
 		AppSiteAddress: yamlConfig.Proxy.Domain,
 		ProxyImage:     yamlConfig.Proxy.DockerImage,
+		ACMEEmail:      yamlConfig.Proxy.ACMEEmail,
 
 		Services: services,
 
