@@ -1,7 +1,6 @@
 services:
 {{range .Service}}  {{.}}
     networks:
-    - proxy_network
     - {{ $.ProjectName }}_network
 
 {{end}}

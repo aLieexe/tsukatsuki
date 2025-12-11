@@ -16,6 +16,7 @@ traefik:
     - "--certificatesresolvers.mytlschallenge.acme.email={{ .ACMEEmail }}"
     - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
     - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    - "--log.level=INFO"
     ports:
     - "80:80"
     - "443:443"
