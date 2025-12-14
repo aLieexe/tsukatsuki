@@ -17,11 +17,17 @@ type FileTemplate struct {
 type ComposePresetTemplates struct {
 	Content []byte
 	Volume  []string
+	EnvVar  []EnvVar
 }
 
 type TemplateProvider struct {
 	fileTemplates           map[string]FileTemplate
 	composePresetsTemplates map[string]ComposePresetTemplates
+}
+
+type EnvVar struct {
+	Name    string
+	Default string
 }
 
 // all:template will include any hidden file / dir in templates
@@ -34,9 +40,18 @@ var composeVolumeConfig = map[string][]string{
 	"caddy":         {"caddy_data", "caddy_config"},
 	"caddy-proxy":   {"caddy_data", "caddy_config"},
 	"traefik-proxy": {"traefik_data"},
-	"nginx":         nil,
 	"postgresql":    {"postgresql_data"},
 	"redis":         {"redis_data"},
+}
+
+var servicesEnvVar = map[string][]EnvVar{
+	"postgresql": {
+		EnvVar{Name: "POSTGRES_USER", Default: ""},
+		EnvVar{Name: "POSTGRES_PASSWORD", Default: ""},
+		EnvVar{Name: "POSTGRES_DB", Default: ""},
+	},
+	"redis": nil,
+	"caddy": nil,
 }
 
 const (
@@ -183,6 +198,7 @@ func (tp *TemplateProvider) loadComposePresets() error {
 		tp.composePresetsTemplates[presetName] = ComposePresetTemplates{
 			Content: content,
 			Volume:  composeVolumeConfig[presetName],
+			EnvVar:  servicesEnvVar[presetName],
 		}
 	}
 

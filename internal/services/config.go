@@ -60,6 +60,7 @@ type AppConfig struct {
 	LocalPath  string
 	RemotePath string
 	OutputDir  string
+	EnvFile    string
 
 	Exit bool
 }
@@ -92,6 +93,7 @@ func NewAppConfig() *AppConfig {
 		Exit: false,
 	}
 
+	cfg.EnvFile = ".env"
 	cfg.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.ProjectName)
 
 	return cfg
@@ -135,8 +137,9 @@ func (app *AppConfig) SaveConfigToFile() error {
 	}
 
 	cfg.Path.LocalPath = app.LocalPath
-	cfg.Path.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", app.ProjectName)
+	cfg.Path.RemotePath = app.RemotePath
 	cfg.Path.OutputDir = app.OutputDir
+	cfg.Path.EnvFile = app.EnvFile
 
 	return config.UpdateConfigFile(cfg)
 }
@@ -182,6 +185,7 @@ func NewAppConfigFromYaml(yamlConfig config.AppConfigYaml) *AppConfig {
 		LocalPath:  yamlConfig.Path.LocalPath,
 		RemotePath: yamlConfig.Path.RemotePath,
 		OutputDir:  yamlConfig.Path.OutputDir,
+		EnvFile:    yamlConfig.Path.EnvFile,
 	}
 	return cfg
 }

@@ -92,34 +92,3 @@
     user: "{{ deploy_user }}"
     state: present
     key: "{{ lookup('file', playbook_dir + '/key/' + deploy_user + '.pub') }}"
-
-- name: Check if .gitignore exists
-  ansible.builtin.stat:
-    path: "{{ local_project_path }}/.gitignore"
-  register: gitignore_check
-  delegate_to: localhost
-  become: false
-  when: not molecule_testing | default(false)
-
-- name: Create .gitignore if not exist
-  ansible.builtin.file:
-    path: "{{ local_project_path }}/.gitignore"
-    state: touch
-  when:
-  - not molecule_testing  | default(false)
-  - not gitignore_check.stat.exists
-  delegate_to: localhost
-  become: false
-
-- name: Add needed lines to .gitignore
-  ansible.builtin.blockinfile:
-    path: "{{ local_project_path }}/.gitignore"
-    block: |
-      key
-      .ansible/
-      app.tar
-    create: yes
-    marker: "# {mark} Tsukatsuki Managed Block"
-  delegate_to: localhost
-  become: false
-  when: not molecule_testing | default(false)

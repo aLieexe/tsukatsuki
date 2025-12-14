@@ -2,6 +2,8 @@ services:
 {{range .Service}}  {{.}}
     networks:
     - {{ $.ProjectName }}_network
+    env_file: 
+    - ../../{{ .EnvFile }}
 
 {{end}}
   {{.ProjectName}}:
@@ -15,6 +17,8 @@ services:
     networks:
     - proxy_network
     - {{ .ProjectName }}_network
+    env_file: 
+    - ../../{{ .EnvFile }}
 {{- if eq .Proxy "traefik" }}
     labels:
     - "traefik.enable=true"

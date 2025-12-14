@@ -1,11 +1,13 @@
 package services
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/aLieexe/tsukatsuki/internal/assets"
@@ -283,6 +285,60 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 			return fmt.Errorf("generating template %s: %w", templateName, err)
 		}
 	}
+	err = ensureGitignoreExist()
+	if err != nil {
+		return fmt.Errorf("ensuring .gitignore: %w", err)
+	}
+	return nil
+}
+
+func ensureGitignoreExist() error {
+	existingContent := make(map[string]int)
+	filename := ".gitignore"
+	contents := []string{"key", ".ansible", "app.tar"}
+
+	file, err := os.OpenFile(filename, os.O_RDONLY|os.O_CREATE, 0o644)
+	if err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		existingContent[line] = 0
+	}
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	file, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	for _, content := range contents {
+		if _, found := existingContent[content]; !found {
+			if _, err := file.WriteString(content + "\n"); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 
@@ -330,6 +386,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 		Proxy          string
 		AppSiteAddress string
 		Security       bool
+		EnvFile        string
 	}{
 		Service:        []string{},
 		Volumes:        []string{},
@@ -338,6 +395,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 		Proxy:          app.Proxy,
 		AppSiteAddress: app.AppSiteAddress,
 		Security:       app.Security,
+		EnvFile:        app.EnvFile,
 	}
 
 	// Combine services and proxy, why do i seperate this again?
@@ -351,6 +409,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	}
 
 	presetProvider := templateProvider.GetComposePresetTemplates()
+	env := []assets.EnvVar{}
 	for _, service := range services {
 		if preset, exists := presetProvider[service.Name]; exists {
 			// Exec all the preset byitself
@@ -373,6 +432,9 @@ func (app *AppConfig) GenerateProjectCompose() error {
 			if preset.Volume != nil {
 				templateData.Volumes = append(templateData.Volumes, preset.Volume...)
 			}
+
+			env = append(env, preset.EnvVar...)
+
 		}
 	}
 
@@ -381,6 +443,60 @@ func (app *AppConfig) GenerateProjectCompose() error {
 		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 
+	err = ensureEnvVars(app.EnvFile, env)
+	if err != nil {
+		return fmt.Errorf("ensuring env vars exist: %w", err)
+	}
+	return nil
+}
+
+func ensureEnvVars(path string, vars []assets.EnvVar) error {
+	existingVars := make(map[string]int)
+
+	file, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0o644)
+	if err != nil {
+		return err
+	}
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		if k, _, ok := strings.Cut(line, "="); ok {
+			existingVars[k] = 0
+		}
+	}
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	file, err = os.OpenFile(path, os.O_APPEND|os.O_RDONLY, 0o644)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if closeError := file.Close(); closeError != nil {
+			if err == nil {
+				err = closeError
+			}
+		}
+	}()
+
+	for _, v := range vars {
+		if _, found := existingVars[v.Name]; !found {
+			if _, err := file.WriteString(v.Name + "=" + v.Default + "\n"); err != nil {
+				return err
+			}
+		}
+	}
 	return nil
 }
 

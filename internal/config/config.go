@@ -40,6 +40,7 @@ type AppConfigYaml struct {
 		LocalPath  string `yaml:"local_path"`
 		RemotePath string `yaml:"remote_path"`
 		OutputDir  string `yaml:"output_dir"`
+		EnvFile    string `yaml:"env_file"`
 	} `yaml:"path"`
 
 	GithubActions []struct {
