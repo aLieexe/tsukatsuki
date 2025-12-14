@@ -1,9 +1,29 @@
 {{.AppSiteAddress}} {
-	# Should be able to just let docker DNS handle the rest
+
 	reverse_proxy {{.ProjectName}}:{{.AppPort}} {
 		header_up X-Forwarded-Proto {scheme}
 		header_up X-Url-Scheme {scheme}
 		header_up X-Real-IP {remote}
 	}
+
+	header {
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		Referrer-Policy no-referrer
+
+		{{- if .Security }}
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		Content-Security-Policy "default-src 'self'"
+		{{- else }}
+		# May break apps, enable as needed
+		# Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		# Content-Security-Policy "default-src 'self'"
+		{{- end }}
+	}
+
+	{{- if .Security }}
+	redir http:// https:// 301
+	{{- end }}
+
 	encode gzip zstd
 }

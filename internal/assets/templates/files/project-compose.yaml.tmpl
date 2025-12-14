@@ -22,6 +22,31 @@ services:
     - "traefik.http.routers.app.entrypoints=websecure"
     - "traefik.http.routers.app.tls.certresolver=mytlschallenge"
     - "traefik.http.services.app.loadbalancer.server.port=5500"
+
+    # Security Header
+    # This security header, shouldn't break anything
+    - "traefik.http.middlewares.safe-headers.headers.contentTypeNosniff=true"
+    - "traefik.http.middlewares.safe-headers.headers.frameDeny=true"
+    - "traefik.http.middlewares.safe-headers.headers.referrerPolicy=no-referrer"
+
+{{- if .Security }}
+    # There is chance of this breaking something
+    - "traefik.http.middlewares.secure-headers.headers.sslRedirect=true"
+    - "traefik.http.middlewares.secure-headers.headers.stsSeconds=63072000"
+    - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
+    - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
+    - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
+    - "traefik.http.middlewares.secure-headers.headers.customResponseHeaders.Content-Security-Policy=default-src 'self'"
+{{- else}} 
+    # There is chance of this breaking something, enable as needed
+    # - "traefik.http.middlewares.secure-headers.headers.sslRedirect=true"
+    # - "traefik.http.middlewares.secure-headers.headers.stsSeconds=63072000"
+    # - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
+    # - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
+    # - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
+    # - "traefik.http.middlewares.secure-headers.headers.customResponseHeaders.Content-Security-Policy=default-src 'self'"
+{{- end }}
+
 {{- end }}
 
 {{- if .Volumes }}

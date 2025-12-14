@@ -329,6 +329,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 		AppPort        int
 		Proxy          string
 		AppSiteAddress string
+		Security       bool
 	}{
 		Service:        []string{},
 		Volumes:        []string{},
@@ -336,6 +337,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 		AppPort:        app.AppPort,
 		Proxy:          app.Proxy,
 		AppSiteAddress: app.AppSiteAddress,
+		Security:       app.Security,
 	}
 
 	// Combine services and proxy, why do i seperate this again?
