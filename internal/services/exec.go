@@ -2,7 +2,6 @@ package services
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -96,13 +95,6 @@ func ExecAnsible(logger *slog.Logger, ansiblePath, playbookName string, port int
 		"-e", fmt.Sprintf("ssh_port=%d", port),
 	)
 
-	if logger.Enabled(context.Background(), slog.LevelInfo) {
-		cmd.Env = append(os.Environ(),
-			"ANSIBLE_SHOW_PER_HOST_START=true",
-			"ANSIBLE_STDOUT_CALLBACK=dense",
-		)
-	}
-
 	cmd.Dir = ansiblePath
 
 	err := execCmd(cmd, logger, "no hosts matched")
@@ -122,13 +114,6 @@ func ExecAnsibleWithPassword(logger *slog.Logger, ansiblePath, playbookName, pas
 		// "-e", fmt.Sprintf("ansible_become_pass=%s ansible_password=%s", password, password),
 		"-e", fmt.Sprintf("ansible_become_pass=%s ansible_password=%s ssh_port=%d", password, password, port),
 	)
-
-	if logger.Enabled(context.Background(), slog.LevelInfo) {
-		cmd.Env = append(os.Environ(),
-			"ANSIBLE_SHOW_PER_HOST_START=true",
-			"ANSIBLE_STDOUT_CALLBACK=dense",
-		)
-	}
 
 	cmd.Dir = ansiblePath
 	err := execCmd(cmd, logger, "no hosts matched")

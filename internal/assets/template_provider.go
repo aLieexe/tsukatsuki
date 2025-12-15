@@ -42,16 +42,27 @@ var composeVolumeConfig = map[string][]string{
 	"traefik-proxy": {"traefik_data"},
 	"postgresql":    {"postgresql_data"},
 	"redis":         {"redis_data"},
+	"minio":         {"minio_data"},
+	"rabbitmq":      {"rabbitmq_data", "rabbitmq_log"},
 }
 
 var servicesEnvVar = map[string][]EnvVar{
 	"postgresql": {
-		EnvVar{Name: "POSTGRES_USER", Default: ""},
-		EnvVar{Name: "POSTGRES_PASSWORD", Default: ""},
-		EnvVar{Name: "POSTGRES_DB", Default: ""},
+		EnvVar{Name: "POSTGRES_USER", Default: "user"},
+		EnvVar{Name: "POSTGRES_PASSWORD", Default: "12345678"},
+		EnvVar{Name: "POSTGRES_DB", Default: "database"},
 	},
 	"redis": nil,
 	"caddy": nil,
+	"minio": {
+		EnvVar{Name: "MINIO_ROOT_USER", Default: "root"},
+		EnvVar{Name: "MINIO_ROOT_PASSWORD", Default: "12345678"},
+	},
+	"rabbitmq": {
+		EnvVar{Name: "RABBITMQ_DEFAULT_USER", Default: "user"},
+		EnvVar{Name: "RABBITMQ_DEFAULT_PASS", Default: "12345678"},
+		EnvVar{Name: "RABBITMQ_DEFAULT_VHOST", Default: "vhost"},
+	},
 }
 
 const (

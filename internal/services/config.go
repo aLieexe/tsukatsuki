@@ -30,6 +30,8 @@ func GetDefaultImageMap() map[string]string {
 
 		"postgresql": "postgres:18.0-alpine",
 		"redis":      "redis:8.2-alpine3.22",
+		"rabbitmq":   "rabbitmq:4.2-management-alpine",
+		"minio":      "minio/minio:RELEASE.2025-09-07T16-13-09Z",
 	}
 
 	return imageMap

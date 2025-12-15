@@ -3,7 +3,7 @@ services:
     networks:
     - {{ $.ProjectName }}_network
     env_file: 
-    - ../../{{ .EnvFile }}
+    - ../../{{ $.EnvFile }}
 
 {{end}}
   {{.ProjectName}}:
@@ -40,7 +40,7 @@ services:
     - "traefik.http.middlewares.secure-headers.headers.stsIncludeSubdomains=true"
     - "traefik.http.middlewares.secure-headers.headers.stsPreload=true"
     - "traefik.http.middlewares.secure-headers.headers.browserXssFilter=true"
-    - "traefik.http.middlewares.secure-headers.headers.customResponseHeaders.Content-Security-Policy=default-src 'self'"
+    # - "traefik.http.middlewares.secure-headers.headers.customResponseHeaders.Content-Security-Policy=default-src 'self'"
 {{- else}} 
     # There is chance of this breaking something, enable as needed
     # - "traefik.http.middlewares.secure-headers.headers.sslRedirect=true"

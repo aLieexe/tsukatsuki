@@ -418,8 +418,18 @@ func (app *AppConfig) GenerateProjectCompose() error {
 				return fmt.Errorf("parsing template %s: %w", service.Name, err)
 			}
 
+			data := struct {
+				DockerImage string
+				Name        string
+				ProjectName string
+			}{
+				Name:        service.Name,
+				DockerImage: service.DockerImage,
+				ProjectName: app.ProjectName,
+			}
+
 			var buffer bytes.Buffer
-			err = serviceTmpl.Execute(&buffer, service)
+			err = serviceTmpl.Execute(&buffer, data)
 			if err != nil {
 				return fmt.Errorf("executing template %s: %w", service.Name, err)
 			}
@@ -430,6 +440,9 @@ func (app *AppConfig) GenerateProjectCompose() error {
 			templateData.Service = append(templateData.Service, serviceDefinition)
 
 			if preset.Volume != nil {
+				for i, volume := range preset.Volume {
+					preset.Volume[i] = fmt.Sprintf("%s_%s", app.ProjectName, volume)
+				}
 				templateData.Volumes = append(templateData.Volumes, preset.Volume...)
 			}
 
@@ -477,7 +490,7 @@ func ensureEnvVars(path string, vars []assets.EnvVar) error {
 		}
 	}()
 
-	file, err = os.OpenFile(path, os.O_APPEND|os.O_RDONLY, 0o644)
+	file, err = os.OpenFile(path, os.O_APPEND|os.O_RDONLY|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}

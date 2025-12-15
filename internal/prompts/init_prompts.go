@@ -110,6 +110,18 @@ func NewSelectionsSchema() *ChoiceQuestionSchema {
 						Description: "An in-memory key-value store for caching and fast data access.",
 						Value:       "redis",
 					},
+
+					{
+						Title:       "RabbitMQ",
+						Description: "A reliable and mature messaging and streaming broker, which is easy to deploy on cloud environments, on-premises, and on your local machine.",
+						Value:       "rabbitmq",
+					},
+
+					{
+						Title:       "MinIO",
+						Description: "A high-performance, S3-compatible object storage solution",
+						Value:       "minio",
+					},
 				},
 			},
 

@@ -1,8 +1,8 @@
 postgresql:
     image: {{ .DockerImage }}
-    container_name: postgres
+    container_name: {{ .ProjectName }}_postgres
     restart: unless-stopped
     ports:
       - "5432:5432"
     volumes:
-      - postgresql_data:/var/lib/postgresql/data
+      - {{ .ProjectName }}_postgresql_data:/var/lib/postgresql/data
