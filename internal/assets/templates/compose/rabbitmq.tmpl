@@ -3,8 +3,8 @@ rabbitmq:
     container_name: {{ .ProjectName }}_rabbitmq
     restart: unless-stopped
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672"
+      - "15672"
     volumes:
       - {{ .ProjectName }}_rabbitmq_data:/var/lib/rabbitmq
       - {{ .ProjectName }}_rabbitmq_log:/var/log/rabbitmq

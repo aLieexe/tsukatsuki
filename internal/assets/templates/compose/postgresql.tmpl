@@ -3,6 +3,6 @@ postgresql:
     container_name: {{ .ProjectName }}_postgres
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "5432"
     volumes:
       - {{ .ProjectName }}_postgresql_data:/var/lib/postgresql/data

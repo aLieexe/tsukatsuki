@@ -3,8 +3,8 @@ minio:
     container_name: {{ .ProjectName }}_minio
     restart: unless-stopped
     ports:
-      - "9000:9000"  # api
-      - "9001:9001"  # console
+      - "9000"  # api
+      - "9001"  # console
     volumes:
       - {{ .ProjectName }}_minio_data:/data
     command: server /data --console-address ":9001"

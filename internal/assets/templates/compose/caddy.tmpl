@@ -3,8 +3,8 @@ caddy:
     container_name: {{ .ProjectName }}_caddy
     restart: unless-stopped
     ports:
-    - "80:80"
-    - "443:443"
+    - "80"
+    - "443"
     volumes:
     - ./Caddyfile:/etc/caddy/Caddyfile
     - {{ .ProjectName }}_caddy_data:/data
