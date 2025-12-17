@@ -1,0 +1,39 @@
+- name: Ensure key directory exists.
+  ansible.builtin.file:
+    path: "{{ playbook_dir }}/key"
+    state: directory
+    mode: '0755'
+  become: false
+  delegate_to: localhost
+
+- name: Generate SSH key for deploy_user
+  community.crypto.openssh_keypair:
+    path: "{{ playbook_dir }}/key/{{ deploy_user }}"
+    type: rsa
+    comment: "ansible-generated Deployment user"
+    size: 2048
+    mode: '0600'
+  delegate_to: localhost
+  become: false
+
+- name: Deploy the generated public key to remote hosts
+  ansible.posix.authorized_key:
+    user: "{{ deploy_user }}"
+    state: present
+    key: "{{ lookup('file', playbook_dir + '/key/' + deploy_user + '.pub') }}"
+
+- name: Generate SSH key if it doesn't exist
+  community.crypto.openssh_keypair:
+    path: "{{ playbook_dir }}/key/{{ ansible_user }}"
+    type: rsa
+    comment: "ansible-generated"
+    size: 2048
+    mode: '0600'
+  delegate_to: localhost
+  become: false
+
+- name: Deploy the generated public key to remote hosts
+  ansible.posix.authorized_key:
+    user: "{{ ansible_user }}"
+    state: present
+    key: "{{ lookup('file', playbook_dir + '/key/' + ansible_user + '.pub') }}"
