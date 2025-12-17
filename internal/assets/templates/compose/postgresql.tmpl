@@ -6,3 +6,9 @@ postgresql:
       - "5432"
     volumes:
       - {{ .ProjectName }}_postgresql_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

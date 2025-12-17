@@ -42,6 +42,9 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		{"project compose generation", func() error {
 			return app.GenerateProjectCompose()
 		}},
+		{"compose helper generation", func() error {
+			return app.GenerateProjectCompose()
+		}},
 		{"ansible files generation", func() error {
 			return app.GenerateAnsibleFiles(extraRoles)
 		}},
@@ -62,6 +65,11 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 		}
 	}
 
+	return nil
+}
+
+// TODO
+func (app *AppConfig) GenerateHelperCompose() error {
 	return nil
 }
 
@@ -378,39 +386,36 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	}()
 
 	// Combine all the needed data, that is the services and the volumes needed for said service to function
+	// Combine services, why do i seperate this again?
+
 	templateData := struct {
-		Service        []string
-		Volumes        []string
-		ProjectName    string
-		AppPort        int
-		Proxy          string
-		AppSiteAddress string
-		Security       bool
-		EnvFile        string
+		ServiceName     []string
+		ServiceTemplate []string
+		Volumes         []string
+		ProjectName     string
+		AppPort         int
+		Proxy           string
+		AppSiteAddress  string
+		Security        bool
+		EnvFile         string
 	}{
-		Service:        []string{},
-		Volumes:        []string{},
-		ProjectName:    app.ProjectName,
-		AppPort:        app.AppPort,
-		Proxy:          app.Proxy,
-		AppSiteAddress: app.AppSiteAddress,
-		Security:       app.Security,
-		EnvFile:        app.EnvFile,
+		ServiceTemplate: []string{},
+		Volumes:         []string{},
+		ProjectName:     app.ProjectName,
+		AppPort:         app.AppPort,
+		Proxy:           app.Proxy,
+		AppSiteAddress:  app.AppSiteAddress,
+		Security:        app.Security,
+		EnvFile:         app.EnvFile,
 	}
 
-	// Combine services and proxy, why do i seperate this again?
-	services := []Service{}
-
 	for _, service := range app.Services {
-		services = append(services, Service{
-			Name:        service.Name,
-			DockerImage: service.DockerImage,
-		})
+		templateData.ServiceName = append(templateData.ServiceName, service.Name)
 	}
 
 	presetProvider := templateProvider.GetComposePresetTemplates()
 	env := []assets.EnvVar{}
-	for _, service := range services {
+	for _, service := range app.Services {
 		if preset, exists := presetProvider[service.Name]; exists {
 			// Exec all the preset byitself
 			serviceTmpl, err := template.New(service.Name).Option("missingkey=error").Parse(string(preset.Content))
@@ -437,7 +442,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 			// All the service and volumes listed previously
 			serviceDefinition := string(buffer.String())
 
-			templateData.Service = append(templateData.Service, serviceDefinition)
+			templateData.ServiceTemplate = append(templateData.ServiceTemplate, serviceDefinition)
 
 			if preset.Volume != nil {
 				for i, volume := range preset.Volume {

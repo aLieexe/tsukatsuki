@@ -36,6 +36,11 @@ type AppConfigYaml struct {
 		DockerImage string `yaml:"docker_image"`
 	} `yaml:"services"`
 
+	// Others []struct {
+	// 	Name        string `yaml:"name"`
+	// 	DockerImage string `yaml:"docker_image"`
+	// } `yaml:"others"`
+
 	Path struct {
 		LocalPath  string `yaml:"local_path"`
 		RemotePath string `yaml:"remote_path"`
