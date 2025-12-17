@@ -3,8 +3,8 @@ package services
 import (
 	"bufio"
 	"bytes"
-	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,14 +14,12 @@ import (
 	"github.com/aLieexe/tsukatsuki/internal/utils"
 )
 
-// List out all compose services to add in docker-compose.yaml
 type ComposeConfig struct {
 	Storage  []string
 	Services []string
 }
 
-func (app *AppConfig) GenerateDeploymentFiles() error {
-	// Pre configuration, adjust needed generation config etc
+func (app *AppConfig) GenerateDeploymentFiles(logger *slog.Logger) error {
 	extraRoles := make([]string, 0)
 
 	extraRoles = append(extraRoles, "common", "docker")
@@ -36,31 +34,30 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 
 	operations := []struct {
 		name string
-		fn   func() error
+		fn   func(*slog.Logger) error
 	}{
-		// This should be fine for now, can add the service later
-		{"project compose generation", func() error {
-			return app.GenerateProjectCompose()
+		{"project compose generation", func(l *slog.Logger) error {
+			return app.GenerateProjectCompose(l)
 		}},
-		{"compose helper generation", func() error {
-			return app.GenerateProjectCompose()
+		{"compose helper generation", func(l *slog.Logger) error {
+			return app.GenerateHelperCompose(l)
 		}},
-		{"ansible files generation", func() error {
-			return app.GenerateAnsibleFiles(extraRoles)
+		{"ansible files generation", func(l *slog.Logger) error {
+			return app.GenerateAnsibleFiles(extraRoles, l)
 		}},
-		{"configuration files generation", func() error {
-			return app.GenerateConfigurationFiles(extraConfigFiles)
+		{"configuration files generation", func(l *slog.Logger) error {
+			return app.GenerateConfigurationFiles(extraConfigFiles, l)
 		}},
-		{"proxy files generation", func() error {
-			return app.GenerateProxyFiles()
+		{"proxy files generation", func(l *slog.Logger) error {
+			return app.GenerateProxyFiles(l)
 		}},
-		{"github actions files generation", func() error {
-			return app.GenerateActionsFiles()
+		{"github actions files generation", func(l *slog.Logger) error {
+			return app.GenerateActionsFiles(l)
 		}},
 	}
 
 	for _, op := range operations {
-		if err := op.fn(); err != nil {
+		if err := op.fn(logger); err != nil {
 			return fmt.Errorf("%s : %w", op.name, err)
 		}
 	}
@@ -69,17 +66,50 @@ func (app *AppConfig) GenerateDeploymentFiles() error {
 }
 
 // TODO
-func (app *AppConfig) GenerateHelperCompose() error {
+func (app *AppConfig) GenerateHelperCompose(logger *slog.Logger) error {
 	return nil
 }
 
-func (app *AppConfig) GenerateProxyFiles() error {
+func (app *AppConfig) GenerateProxyFiles(logger *slog.Logger) error {
+	// Proxy compose file code based on the one defined on template_provider.go
 	const composeTemplateName = "compose-proxy"
-	proxyPresetCode := fmt.Sprintf("%s-proxy", app.Proxy)
+
 	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
 	if err != nil {
 		return err
 	}
+
+	proxyComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
+
+	filePath := filepath.Join(proxyComposeTemplate.OutputDir, proxyComposeTemplate.Filename)
+
+	// If a proxy compose file already existed, skip it
+	if _, err := os.Stat(filePath); err == nil {
+		logger.Warn(fmt.Sprintf("skipping %s: file already exists", filePath))
+		if app.Proxy != "traefik" {
+			proxyEntryCode := fmt.Sprintf("proxy-%s-entry", app.Proxy)
+			proxyProjectCode := fmt.Sprintf("proxy-%s-project", app.Proxy)
+
+			fileTemplate := templateProvider.GetFileTemplates()[proxyEntryCode]
+			if err := generateStandardTemplate(&fileTemplate, proxyEntryCode, app, logger); err != nil {
+				return fmt.Errorf("generating template %s: %w", proxyEntryCode, err)
+			}
+
+			fileTemplate = templateProvider.GetFileTemplates()[proxyProjectCode]
+			err = createOutputDirectory(fileTemplate.OutputDir)
+			if err != nil {
+				return err
+			}
+
+			if err := generateStandardTemplate(&fileTemplate, proxyProjectCode, app, logger); err != nil {
+				return fmt.Errorf("generating template %s: %w", proxyProjectCode, err)
+			}
+		}
+		return nil
+	}
+
+	// Get the specific template for each proxy that will be used within the proxy compose file
+	proxyPresetCode := fmt.Sprintf("%s-proxy", app.Proxy)
 	presetProvider := templateProvider.GetComposePresetTemplates()
 	preset := presetProvider[proxyPresetCode]
 
@@ -102,7 +132,7 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		return fmt.Errorf("executing template %s: %w", proxyPresetCode, err)
 	}
 
-	// All the service and volumes listed previously
+	// The proxy preset template generated above
 	proxyPreset := string(buffer.String())
 
 	composeTemplateData := struct {
@@ -115,8 +145,6 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		Proxy:         app.Proxy,
 	}
 
-	proxyComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
-
 	err = createOutputDirectory(proxyComposeTemplate.OutputDir)
 	if err != nil {
 		return err
@@ -127,8 +155,6 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		return fmt.Errorf("parsing template %s: %w", proxyComposeTemplate.Filename, err)
 	}
 
-	// create output file
-	filePath := filepath.Join(proxyComposeTemplate.OutputDir, proxyComposeTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", filePath, err)
@@ -147,16 +173,20 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		return fmt.Errorf("executing template %s: %w", composeTemplateName, err)
 	}
 
-	// Proxy don't need other files, only a docker compose file
+	// Some proxy don't need other files, only a docker-compose file
+	// Traefik is set to use its docker provider, not needing other file to functions
 	if app.Proxy == "traefik" {
 		return nil
 	}
 
+	// A code referring to the proxy global config that will import the project specific file
+	// Both code are defined within template_provider.go
 	proxyEntryCode := fmt.Sprintf("proxy-%s-entry", app.Proxy)
+	// Code referring to the project specific proxy file configuration
 	proxyProjectCode := fmt.Sprintf("proxy-%s-project", app.Proxy)
 
 	fileTemplate := templateProvider.GetFileTemplates()[proxyEntryCode]
-	if err := generateStandardTemplate(&fileTemplate, proxyEntryCode, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, proxyEntryCode, app, logger); err != nil {
 		return fmt.Errorf("generating template %s: %w", proxyEntryCode, err)
 	}
 
@@ -167,14 +197,13 @@ func (app *AppConfig) GenerateProxyFiles() error {
 		return err
 	}
 
-	if err := generateStandardTemplate(&fileTemplate, proxyProjectCode, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, proxyProjectCode, app, logger); err != nil {
 		return fmt.Errorf("generating template %s: %w", proxyProjectCode, err)
 	}
 	return nil
 }
 
-// TODO: Refactor it to be able to do array, Planning on changing the github stuff into multi choice instead
-func (app *AppConfig) GenerateActionsFiles() error {
+func (app *AppConfig) GenerateActionsFiles(logger *slog.Logger) error {
 	if app.GithubActions == nil {
 		return nil
 	}
@@ -185,11 +214,14 @@ func (app *AppConfig) GenerateActionsFiles() error {
 	}
 
 	for _, actions := range app.GithubActions {
+		// Currently done this way for future expansion
+		// Since docker is used there wont be any difference between command
+		// Which is why they end up using the same command
 		if actions.Type == "actions-cd" {
 			code := fmt.Sprintf("%s-%s", actions.Type, "docker")
 			fileTemplate := templateProvider.GetFileTemplates()[code]
 
-			if err := generateStandardTemplate(&fileTemplate, code, app); err != nil {
+			if err := generateStandardTemplate(&fileTemplate, code, app, logger); err != nil {
 				return fmt.Errorf("generating template %s: %w", code, err)
 			}
 			continue
@@ -197,7 +229,8 @@ func (app *AppConfig) GenerateActionsFiles() error {
 		code := fmt.Sprintf("%s-%s", actions.Type, app.Runtime)
 		fileTemplate := templateProvider.GetFileTemplates()[code]
 
-		if err := generateStandardTemplate(&fileTemplate, code, app); err != nil {
+		// Use a generic function to generate the file
+		if err := generateStandardTemplate(&fileTemplate, code, app, logger); err != nil {
 			return fmt.Errorf("generating template %s: %w", code, err)
 		}
 	}
@@ -205,13 +238,12 @@ func (app *AppConfig) GenerateActionsFiles() error {
 	return nil
 }
 
-func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
+func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string, logger *slog.Logger) error {
+	// Ansible files code that are specified in template_provider.go
 	const ansibleSetupCode = "ansible-setup"
 	const ansibleInventoryCode = "ansible-inventory"
 	const ansibleVarsCode = "ansible-vars"
 	const ansibleProxyRolesCode = "ansible-proxy"
-
-	ansibleStaticDir := "static/ansible"
 
 	playbookData := struct {
 		Roles []string
@@ -231,22 +263,22 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 	}
 
 	fileTemplate := templateProvider.GetFileTemplates()[ansibleSetupCode]
-	if err := generateStandardTemplate(&fileTemplate, ansibleSetupCode, playbookData); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, ansibleSetupCode, playbookData, logger); err != nil {
 		return fmt.Errorf("generating template %s: %w", ansibleSetupCode, err)
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()[ansibleInventoryCode]
-	if err := generateStandardTemplate(&fileTemplate, ansibleInventoryCode, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, ansibleInventoryCode, app, logger); err != nil {
 		return fmt.Errorf("generating template %s: %w", ansibleInventoryCode, err)
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()[ansibleVarsCode]
-	if err := generateStandardTemplate(&fileTemplate, ansibleVarsCode, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, ansibleVarsCode, app, logger); err != nil {
 		return fmt.Errorf("generating template %s: %w", ansibleVarsCode, err)
 	}
 
 	fileTemplate = templateProvider.GetFileTemplates()[ansibleProxyRolesCode]
-	if err := generateStandardTemplate(&fileTemplate, ansibleProxyRolesCode, app); err != nil {
+	if err := generateStandardTemplate(&fileTemplate, ansibleProxyRolesCode, app, logger); err != nil {
 		return fmt.Errorf("generating template %s: %w", ansibleProxyRolesCode, err)
 	}
 
@@ -264,11 +296,13 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 	}
 
 	// Roles
+	ansibleStaticDir := "static/ansible"
 	rolesSrcDir := filepath.Join(ansibleStaticDir, "/roles")
 	rolesDstDir := filepath.Join(app.OutputDir, "ansible", "/roles")
 
 	playbookData.Roles = append(playbookData.Roles, "deployment")
 
+	// Copy each roles one by one
 	for _, role := range playbookData.Roles {
 		src := filepath.Join(rolesSrcDir, role)
 		dst := filepath.Join(rolesDstDir, role)
@@ -281,15 +315,16 @@ func (app *AppConfig) GenerateAnsibleFiles(extraRoles []string) error {
 	return nil
 }
 
-func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error {
+func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string, logger *slog.Logger) error {
 	templateProvider, err := assets.NewTemplateProvider(app.OutputDir, app.ProjectName)
 	if err != nil {
 		return err
 	}
 
 	for _, templateName := range templateNeeded {
+		// Use a generic function to generate the file
 		fileTemplate := templateProvider.GetFileTemplates()[templateName]
-		if err := generateStandardTemplate(&fileTemplate, templateName, app); err != nil {
+		if err := generateStandardTemplate(&fileTemplate, templateName, app, logger); err != nil {
 			return fmt.Errorf("generating template %s: %w", templateName, err)
 		}
 	}
@@ -300,6 +335,7 @@ func (app *AppConfig) GenerateConfigurationFiles(templateNeeded []string) error 
 	return nil
 }
 
+// An idempotent function that ensure some file is not commited
 func ensureGitignoreExist() error {
 	existingContent := make(map[string]int)
 	filename := ".gitignore"
@@ -327,7 +363,7 @@ func ensureGitignoreExist() error {
 		}
 	}()
 
-	file, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0o644)
+	file, err = os.OpenFile(filename, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -350,7 +386,7 @@ func ensureGitignoreExist() error {
 	return nil
 }
 
-func (app *AppConfig) GenerateProjectCompose() error {
+func (app *AppConfig) GenerateProjectCompose(logger *slog.Logger) error {
 	// Mapping name of project-compose.yaml in template_provider.go
 	const composeTemplateName = "compose-project"
 
@@ -358,20 +394,26 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	if err != nil {
 		return err
 	}
-	composeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
+	projectComposeTemplate := templateProvider.GetFileTemplates()[composeTemplateName]
 
-	err = createOutputDirectory(composeTemplate.OutputDir)
+	// If a project compose file already existed, skip it
+	filePath := filepath.Join(projectComposeTemplate.OutputDir, projectComposeTemplate.Filename)
+	if _, err := os.Stat(filePath); err == nil {
+		logger.Warn(fmt.Sprintf("skipping %s: file already exists", filePath))
+		return nil
+	}
+
+	err = createOutputDirectory(projectComposeTemplate.OutputDir)
 	if err != nil {
 		return err
 	}
 
-	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(composeTemplate.Content))
+	tmpl, err := template.New(composeTemplateName).Option("missingkey=error").Parse(string(projectComposeTemplate.Content))
 	if err != nil {
-		return fmt.Errorf("parsing template %s: %w", composeTemplate.Filename, err)
+		return fmt.Errorf("parsing template %s: %w", projectComposeTemplate.Filename, err)
 	}
 
 	// create output file
-	filePath := filepath.Join(composeTemplate.OutputDir, composeTemplate.Filename)
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", filePath, err)
@@ -386,8 +428,7 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	}()
 
 	// Combine all the needed data, that is the services and the volumes needed for said service to function
-	// Combine services, why do i seperate this again?
-
+	// This will be used in executing the project-compose file template
 	templateData := struct {
 		ServiceName     []string
 		ServiceTemplate []string
@@ -414,7 +455,11 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	}
 
 	presetProvider := templateProvider.GetComposePresetTemplates()
+
+	// The env is here rather then on its own loop for better performance (honestly, it's either negligible or worse, idk why i do this)
 	env := []assets.EnvVar{}
+
+	// Prepare each services preset that will be included in projec compose template
 	for _, service := range app.Services {
 		if preset, exists := presetProvider[service.Name]; exists {
 			// Exec all the preset byitself
@@ -468,6 +513,8 @@ func (app *AppConfig) GenerateProjectCompose() error {
 	return nil
 }
 
+// Ensure that .env file have a placeholder, these placeholder is needed for the services to function
+// This will also clear up and give example for the user. They are defined in template_provider.go
 func ensureEnvVars(path string, vars []assets.EnvVar) error {
 	existingVars := make(map[string]int)
 
@@ -495,7 +542,7 @@ func ensureEnvVars(path string, vars []assets.EnvVar) error {
 		}
 	}()
 
-	file, err = os.OpenFile(path, os.O_APPEND|os.O_RDONLY|os.O_WRONLY, 0o644)
+	file, err = os.OpenFile(path, os.O_APPEND|os.O_WRONLY, 0o644)
 	if err != nil {
 		return err
 	}
@@ -523,35 +570,22 @@ func ensureEnvVars(path string, vars []assets.EnvVar) error {
 func createOutputDirectory(dir string) error {
 	err := os.MkdirAll(dir, 0o755)
 	if err != nil {
-		if errors.Is(err, os.ErrExist) {
-			// if the dir already exists then test the write permission
-			testFile := filepath.Join(dir, ".perm_check")
-			f, writeErr := os.Create(testFile)
-			if writeErr != nil {
-				return fmt.Errorf("no write permission in %q: %w", dir, writeErr)
-			}
-
-			if closeErr := f.Close(); closeErr != nil {
-				return fmt.Errorf("closing test file %s: %w", f.Name(), closeErr)
-			}
-
-			// Clean up test
-			if removeErr := os.Remove(testFile); removeErr != nil {
-				return fmt.Errorf("removing test file %s: %w", f.Name(), removeErr)
-			}
-			return nil
-		}
-		// i think parent dir permission also go here? not sure
 		return fmt.Errorf("creating directory %s: %w", dir, err)
 	}
-
 	return nil
 }
 
-func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName string, data any) error {
+func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName string, data any, logger *slog.Logger) error {
 	err := createOutputDirectory(fileTemplate.OutputDir)
 	if err != nil {
 		return err
+	}
+
+	// If file already existed, skip the current file
+	filePath := filepath.Join(fileTemplate.OutputDir, fileTemplate.Filename)
+	if _, err := os.Stat(filePath); err == nil {
+		logger.Warn(fmt.Sprintf("skipping %s: file already exists", filePath))
+		return nil
 	}
 
 	content := string(fileTemplate.Content)
@@ -564,8 +598,7 @@ func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName st
 		return fmt.Errorf("parsing template '%s': %w", templateName, err)
 	}
 
-	// create output file
-	filePath := filepath.Join(fileTemplate.OutputDir, fileTemplate.Filename)
+	// Create output file
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("creating file %s: %w", filePath, err)
@@ -579,7 +612,7 @@ func generateStandardTemplate(fileTemplate *assets.FileTemplate, templateName st
 		}
 	}()
 
-	// execute template with the data needed
+	// Execute template with the data needed
 	if err := tmpl.Execute(file, data); err != nil {
 		return fmt.Errorf("executing template %s: %w", templateName, err)
 	}

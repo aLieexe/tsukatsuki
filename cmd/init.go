@@ -260,7 +260,7 @@ func runInitCommand(cmd *cobra.Command) {
 		logger.Error(fmt.Sprintf("Failed creating configuration file: %s", err))
 	}
 
-	err = cfg.GenerateDeploymentFiles()
+	err = cfg.GenerateDeploymentFiles(logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed generating deployment files: %s", err))
 	}
