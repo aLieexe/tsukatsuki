@@ -25,6 +25,5 @@
 - name: Setup and Enable AppArmor
   include_tasks: apparmor.yaml  
 
-
 - name: Reboot the server
   ansible.builtin.reboot:

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"log"
 	"log/slog"
 	"net"
 	"os"
@@ -11,6 +12,11 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/charmbracelet/x/term"
+	"golang.org/x/crypto/ssh"
+
+	"github.com/aLieexe/tsukatsuki/internal/utils"
 )
 
 func checkTCPReachable(host string, port int, timeout time.Duration) error {
@@ -119,6 +125,84 @@ func ExecAnsibleWithPassword(logger *slog.Logger, ansiblePath, playbookName, pas
 	err := execCmd(cmd, logger, "no hosts matched")
 	if err != nil {
 		return fmt.Errorf("executing with password: %w", err)
+	}
+	return nil
+}
+
+func ConnectSSH(config *ssh.ClientConfig, serverIp string, sshPort int) error {
+	var sshHost string
+	if utils.IsIPv6(serverIp) {
+		sshHost = fmt.Sprintf("[%s]:%d", serverIp, sshPort)
+	} else {
+		sshHost = fmt.Sprintf("%s:%d", serverIp, sshPort)
+	}
+
+	client, err := ssh.Dial("tcp", sshHost, config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if deferError := client.Close(); deferError != nil {
+			if err == nil {
+				err = deferError
+			}
+		}
+	}()
+
+	session, err := client.NewSession()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if deferError := session.Close(); deferError != nil {
+			if err == nil {
+				err = deferError
+			}
+		}
+	}()
+
+	fd := os.Stdin.Fd() // fd is uintptr
+
+	// Make terminal raw
+	oldState, err := term.MakeRaw(fd)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		if deferError := term.Restore(fd, oldState); deferError != nil {
+			if err == nil {
+				err = deferError
+			}
+		}
+	}()
+
+	// Get terminal size (expects int)
+	width, height, err := term.GetSize(fd)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	modes := ssh.TerminalModes{
+		ssh.ECHO:          1,
+		ssh.TTY_OP_ISPEED: 14400,
+		ssh.TTY_OP_OSPEED: 14400,
+	}
+
+	if err := session.RequestPty("xterm-256color", height, width, modes); err != nil {
+		log.Fatal(err)
+	}
+
+	session.Stdin = os.Stdin
+	session.Stdout = os.Stdout
+	session.Stderr = os.Stderr
+
+	if err := session.Shell(); err != nil {
+		log.Fatal(err)
+	}
+
+	if err := session.Wait(); err != nil {
+		return err
 	}
 	return nil
 }
