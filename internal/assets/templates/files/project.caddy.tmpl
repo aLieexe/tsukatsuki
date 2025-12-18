@@ -11,19 +11,12 @@
 		X-Frame-Options DENY
 		Referrer-Policy no-referrer
 
-		{{- if .Security }}
-		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-		Content-Security-Policy "default-src 'self'"
-		{{- else }}
 		# May break apps, enable as needed
-		# Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+		Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
 		# Content-Security-Policy "default-src 'self'"
-		{{- end }}
 	}
-
-	{{- if .Security }}
+	
 	redir http:// https:// 301
-	{{- end }}
 
 	encode gzip zstd
 }
