@@ -24,6 +24,7 @@ services:
     {{- end }}
     networks:
     - {{ $.ProjectName }}_network
+    - proxy_network
     env_file: 
     - ../../{{ $.EnvFile }}
 
