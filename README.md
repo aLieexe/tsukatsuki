@@ -4,28 +4,28 @@ Tsukatsuki is an open-source command-line tool designed to simplify application 
 Tsukatsuki currently supports **Node.js** and **Go** runtimes. The project focuses on a **single-Dockerfile workflow**: one Dockerfile is used to generate a Docker Compose setup for deployment. If multiple services or Dockerfiles are required, each must be generated and initialized as a separate Tsukatsuki project. The Dockerfile is expected to be deployment-ready before initialization.
 
 
-For a more detailed documentation, please visit 
+For a more detailed documentation, please visit here: [Documentation](https://alieexe.github.io/tsukatsuki/)
 
 ## Installation
-Tsukatsuki is available to https://alieexe.github.io/tsukatsuki
+Tsukatsuki is available to:  
 
 - Linux
 - Windows via WSL
 
 As long as your OS can run ansible as the control node, then tsukatsuki will work fine. 
-You can however still benefits even without it, especially for generate the configuration files needed
+You can however still benefits even without it, especially to generate the configuration files needed
 
-You can download the pre-built binary package 
+You can download the pre-built binary package in `Releases` 
 
-or 
-
-By cloning the repository and build it manually:
+Or by cloning the repository and build it manually:
 ```
 git clone https://github.com/aLieexe/tsukatsuki.git
 cd tsukatsuki
 make install
 ```
 After installation, the `tsukatsuki` command becomes available system-wide.
+
+
 
 ## Initializing a Project
 To generate a deployment setup, run:
