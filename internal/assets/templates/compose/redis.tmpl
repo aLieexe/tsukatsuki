@@ -1,8 +1,14 @@
 redis:
     image: {{ .DockerImage }} 
-    container_name: redis
+    container_name: {{ .ProjectName }}_redis
     ports:
-      - "6379:6379"
+      - "6379"
     volumes:
-      - redis_data:/data
+      - {{ .ProjectName }}_redis_data:/data
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s

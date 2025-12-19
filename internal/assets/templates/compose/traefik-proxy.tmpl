@@ -3,8 +3,8 @@ traefik:
     image: {{ .DockerImage }}
     restart: always
     command:
-    - "--api.dashboard=true"
-    - "--api.debug=true"
+    - "--api.dashboard=false"
+    - "--api.debug=false"
     - "--providers.docker=true"
     - "--providers.docker.exposedbydefault=false"
     - "--entrypoints.web.address=:80"
@@ -12,10 +12,11 @@ traefik:
     - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
     - "--entrypoints.websecure.forwardedHeaders.insecure=true"
     - "--entrypoints.websecure.address=:443"
-    - "--certificatesresolvers.mytlschallenge.acme.httpchallenge=true"
-    - "--certificatesresolvers.mytlschallenge.acme.email={{ .ACMEEmail }}"
-    - "--certificatesresolvers.mytlschallenge.acme.httpchallenge.entrypoint=web"
-    - "--certificatesresolvers.mytlschallenge.acme.storage=/letsencrypt/acme.json"
+    - "--certificatesresolvers.tlschalleng.acme.httpchallenge=true"
+    - "--certificatesresolvers.tlschallenge.acme.httpchallenge.entrypoint=web"
+    - "--certificatesresolvers.tlschallenge.acme.email={{ .ACMEEmail }}"
+    - "--certificatesresolvers.tlschallenge.acme.storage=/letsencrypt/acme.json"
+    - "--log.level=INFO"
     ports:
     - "80:80"
     - "443:443"

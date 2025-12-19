@@ -96,6 +96,7 @@ func runInitCommand(cmd *cobra.Command) {
 
 	cfg.ProjectName = userInput.AppName.Value
 	cfg.ExitCLI(teaProgram)
+	cfg.RemotePath = fmt.Sprintf("/home/tsukatsuki/%s", cfg.ProjectName)
 
 	// AppPort Question
 	teaProgram = tea.NewProgram(textinput.InitializeTextinputModel(userInput.AppPort, questionSchema.Questions["app-port"], cfg, utils.PortValidator))
@@ -205,7 +206,7 @@ func runInitCommand(cmd *cobra.Command) {
 
 	cfg.ProxyImage, exists = imageMap[userInput.Proxy.Value]
 	if !exists {
-		logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+		logger.Error(fmt.Sprintf("failed to map %s", userInput.Proxy.Value))
 		os.Exit(1)
 	}
 
@@ -229,7 +230,7 @@ func runInitCommand(cmd *cobra.Command) {
 	for _, svc := range userInput.Services.Value {
 		img, exists := imageMap[svc]
 		if !exists {
-			logger.Error(fmt.Sprintf("failed to map %s", userInput.Runtime.Value))
+			logger.Error(fmt.Sprintf("failed to map %s", userInput.Services.Value))
 			os.Exit(1)
 		}
 
@@ -259,7 +260,7 @@ func runInitCommand(cmd *cobra.Command) {
 		logger.Error(fmt.Sprintf("Failed creating configuration file: %s", err))
 	}
 
-	err = cfg.GenerateDeploymentFiles()
+	err = cfg.GenerateDeploymentFiles(logger)
 	if err != nil {
 		logger.Error(fmt.Sprintf("Failed generating deployment files: %s", err))
 	}

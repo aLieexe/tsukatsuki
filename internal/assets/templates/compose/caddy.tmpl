@@ -1,14 +1,14 @@
 caddy:
     image: {{ .DockerImage }}
-    container_name: caddy
+    container_name: {{ .ProjectName }}_caddy
     restart: unless-stopped
     ports:
-    - "80:80"
-    - "443:443"
+    - "80"
+    - "443"
     volumes:
     - ./Caddyfile:/etc/caddy/Caddyfile
-    - caddy_data:/data
-    - caddy_config:/config
+    - {{ .ProjectName }}_caddy_data:/data
+    - {{ .ProjectName }}_caddy_config:/config
     depends_on:
       app:
         condition: service_healthy

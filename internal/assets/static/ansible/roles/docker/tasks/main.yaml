@@ -48,12 +48,16 @@
       - docker-compose-plugin
     state: present
 
-- name: add the current user to docker group
+- name: Add multiple users to docker group
   ansible.builtin.user:
-    name: "{{ hostvars['deploy_user'].ansible_user }}"
+    name: "{{ item }}"
     groups: docker
     append: yes
+  loop:
+    - "{{ hostvars['setup_user'].ansible_user }}"
+    - "{{ hostvars['deploy_user'].ansible_user }}"
   notify: Restart docker
+
 
 - name: Copy docker daemon json
   ansible.builtin.copy:

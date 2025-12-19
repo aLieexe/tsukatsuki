@@ -39,7 +39,7 @@ to quickly create a Cobra application.`,
 		logger.Info("generating files...")
 
 		cfg := services.NewAppConfigFromYaml(yamlConfig)
-		err = cfg.GenerateDeploymentFiles()
+		err = cfg.GenerateDeploymentFiles(logger)
 		if err != nil {
 			logger.Error(fmt.Sprintf("failed generating configuration files: %s", err))
 			os.Exit(1)

@@ -1,8 +1,9 @@
 services:
-{{range .Service}}  {{.}}
+{{range .ServiceTemplate }}  {{.}}
     networks:
-    - proxy_network
     - {{ $.ProjectName }}_network
+    env_file: 
+    - ../../{{ $.EnvFile }}
 
 {{end}}
   {{.ProjectName}}:
@@ -13,17 +14,56 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+    {{- if .ServiceName }}
+    depends_on:
+    {{- range .ServiceName }}
+      {{ . }}:
+        condition: service_healthy
+        restart: true
+    {{- end }}
+    {{- end }}
     networks:
+    - {{ $.ProjectName }}_network
     - proxy_network
-    - {{ .ProjectName }}_network
+    env_file: 
+    - ../../{{ $.EnvFile }}
+
 {{- if eq .Proxy "traefik" }}
     labels:
     - "traefik.enable=true"
     - "traefik.http.routers.app.rule=Host(`{{ .AppSiteAddress }}`)"
+    - "traefik.http.routers.app.tls=true"
     - "traefik.http.routers.app.entrypoints=websecure"
-    - "traefik.http.routers.app.tls.certresolver=mytlschallenge"
+    - "traefik.http.routers.app.tls.certresolver=tlschallenge"
     - "traefik.http.services.app.loadbalancer.server.port=5500"
+
+    # Security Header
+    # This security header, shouldn't break anything
+    - "traefik.http.middlewares.app-headers.headers.contentTypeNosniff=true"
+    - "traefik.http.middlewares.app-headers.headers.frameDeny=true"
+    - "traefik.http.middlewares.app-headers.headers.referrerPolicy=no-referrer"
+
+{{- if .Security }}
+    # There is chance of this breaking something
+    - "traefik.http.middlewares.app-headers.headers.sslRedirect=true"
+    - "traefik.http.middlewares.app-headers.headers.stsSeconds=63072000"
+    - "traefik.http.middlewares.app-headers.headers.stsIncludeSubdomains=true"
+    - "traefik.http.middlewares.app-headers.headers.stsPreload=true"
+    - "traefik.http.middlewares.app-headers.headers.browserXssFilter=true"
+    - "traefik.http.routers.app.middlewares=app-headers@docker"
+    # - "traefik.http.middlewares.app-headers.headers.customResponseHeaders.Content-Security-Policy=default-src 'self'"
+{{- else}} 
+    # There is chance of this breaking something, enable as needed
+    # - "traefik.http.middlewares.app-headers.headers.sslRedirect=true"
+    # - "traefik.http.middlewares.app-headers.headers.stsSeconds=63072000"
+    # - "traefik.http.middlewares.app-headers.headers.stsIncludeSubdomains=true"
+    # - "traefik.http.middlewares.app-headers.headers.stsPreload=true"
+    # - "traefik.http.middlewares.app-headers.headers.browserXssFilter=true"
+    # - "traefik.http.middlewares.app-headers.headers.customResponseHeaders.Content-Security-Policy=default-src 'self'"
+
 {{- end }}
+
+{{ end }}
 
 {{- if .Volumes }}
 volumes:

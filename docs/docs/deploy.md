@@ -6,6 +6,11 @@ The `deploy` command will deploy application according to the information specif
 tsukatsuki deploy
 ```
 
+## Options
+```
+--verbose         Verbose output
+```
+
 ## Examples
 ```bash
 tsukatsuki deploy

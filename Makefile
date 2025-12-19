@@ -47,5 +47,5 @@ install:
 .PHONY: docs
 ## docs: serve docs
 docs:
-	mkdocs serve -f ./docs/mkdocs.yml
+	mkdocs serve -f ./docs/mkdocs.yml -w ./docs/mkdocs.yml
 

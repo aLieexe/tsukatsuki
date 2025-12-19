@@ -17,11 +17,17 @@ type FileTemplate struct {
 type ComposePresetTemplates struct {
 	Content []byte
 	Volume  []string
+	EnvVar  []EnvVar
 }
 
 type TemplateProvider struct {
 	fileTemplates           map[string]FileTemplate
 	composePresetsTemplates map[string]ComposePresetTemplates
+}
+
+type EnvVar struct {
+	Name    string
+	Default string
 }
 
 // all:template will include any hidden file / dir in templates
@@ -34,9 +40,29 @@ var composeVolumeConfig = map[string][]string{
 	"caddy":         {"caddy_data", "caddy_config"},
 	"caddy-proxy":   {"caddy_data", "caddy_config"},
 	"traefik-proxy": {"traefik_data"},
-	"nginx":         nil,
 	"postgresql":    {"postgresql_data"},
 	"redis":         {"redis_data"},
+	"minio":         {"minio_data"},
+	"rabbitmq":      {"rabbitmq_data", "rabbitmq_log"},
+}
+
+var servicesEnvVar = map[string][]EnvVar{
+	"postgresql": {
+		EnvVar{Name: "POSTGRES_USER", Default: "user"},
+		EnvVar{Name: "POSTGRES_PASSWORD", Default: "12345678"},
+		EnvVar{Name: "POSTGRES_DB", Default: "database"},
+	},
+	"redis": nil,
+	"caddy": nil,
+	"minio": {
+		EnvVar{Name: "MINIO_ROOT_USER", Default: "root"},
+		EnvVar{Name: "MINIO_ROOT_PASSWORD", Default: "12345678"},
+	},
+	"rabbitmq": {
+		EnvVar{Name: "RABBITMQ_DEFAULT_USER", Default: "user"},
+		EnvVar{Name: "RABBITMQ_DEFAULT_PASS", Default: "12345678"},
+		EnvVar{Name: "RABBITMQ_DEFAULT_VHOST", Default: "vhost"},
+	},
 }
 
 const (
@@ -183,6 +209,7 @@ func (tp *TemplateProvider) loadComposePresets() error {
 		tp.composePresetsTemplates[presetName] = ComposePresetTemplates{
 			Content: content,
 			Volume:  composeVolumeConfig[presetName],
+			EnvVar:  servicesEnvVar[presetName],
 		}
 	}
 

@@ -1,19 +1,42 @@
 site_name: Tsukatsuki
-theme: 
-  name: readthedocs
-  highlightjs: true
-  hljs_languages:
-    - yaml
-    - bash
+
+theme:
+  name: material
+  custom_dir: custom_theme/
+  theme:
+  features:
+  - navigation.instant
+  - navigation.sections
+  # - navigation.tabs
+  - navigation.top
+  - navigation.tracking
+  - toc.flow
+  - search.highlight
+  - search.suggest
+  - content.code.copy
+  - content.code.annotate
+  palette:
+  - scheme: default
+    toggle:
+      icon: material/brightness-7
+      name: Switch to dark mode
+  - scheme: slate
+    toggle:
+      icon: material/brightness-4
+      name: Switch to light mode
 site_url: https://alieexe.github.io/tsukatsuki/
 
 nav:
-- Home: index.md
-- Getting Started: get-started.md
-- Command: 
+- Getting Started: index.md
+- User Guide: user-guide.md
+- Configuration: configuration.md
+- Command:
   - Init: init.md
   - Deploy: deploy.md
   - Generate: generate.md
+  - SSH: ssh.md
+- Roadmap: roadmap.md
+
 
 exclude_docs: |
   api-config.json    # A file with this name anywhere.
