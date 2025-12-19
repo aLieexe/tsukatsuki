@@ -6,13 +6,13 @@ before:
   - go mod tidy
 
 builds:
-- binary: test
-  main: ./cmd/api/main.go
+- id: tsukatsuki
+  binary: tsukatsuki
+  main: ./main.go
   env:
   - CGO_ENABLED=0
   goos:
   - linux
-  - windows
   - darwin
   goarch:
   - amd64
@@ -21,17 +21,33 @@ builds:
 archives:
 - formats: [ tar.gz ]
   name_template: >-
-    {{- .ProjectName }}_ {{- .Version }}_ {{- title .Os }}_ {{- if eq .Arch "amd64" }}x86_64 {{- else if eq .Arch "386" }}i386 {{- else }}{{ .Arch }}{{ end }} {{- if .Arm }}v{{ .Arm }}{{ end -}}
+    {{ .ProjectName }}_{{ .Version }}_{{ title .Os }}_{{ if eq .Arch "amd64" }}x86_64{{ else }}{{ .Arch }}{{ end }}
 
-  # use zip for windows archives
-  format_overrides:
-  - goos: windows
-    formats: [ zip ]
-  builds_info:
-    group: root
-    owner: root
-  files:
-  - README.md
+
+nfpms:
+- id: deb
+  ids:
+  - tsukatsuki
+  package_name: tsukatsuki
+  vendor: alieexe
+  homepage: https://github.com/aLieexe/tsukatsuki
+  maintainer: aLieexe <rizky.alay@gmail.com>
+  description: Command-line tool designed to simplify application deployment on self-hosted infrastructure
+  license: MIT
+
+  formats:
+  - deb
+
+  section: utils
+  priority: optional
+  bindir: /usr/bin
+
+  dependencies:
+  - python3
+
+  contents:
+  - src: README.md
+    dst: /usr/share/doc/tsukatsuki/README.md
 
 changelog:
   sort: asc
@@ -46,3 +62,4 @@ changelog:
 
 checksum:
   name_template: "checksums.txt"
+
