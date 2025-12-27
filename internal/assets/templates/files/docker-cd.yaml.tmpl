@@ -62,4 +62,4 @@ jobs:
           git pull || true
           docker load -i app.tar
           cd {{ .OutputDir }}/conf
-          docker compose up -d
+          docker compose -p {{ .ProjectName }} -f project-compose.yaml up -d 

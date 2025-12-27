@@ -1,13 +1,10 @@
 rabbitmq:
     image: {{ .DockerImage }}
     container_name: {{ .ProjectName }}_rabbitmq
-    restart: unless-stopped
-    ports:
-      - "5672"
-      - "15672"
+    restart: always 
     volumes:
-      - {{ .ProjectName }}_rabbitmq_data:/var/lib/rabbitmq
-      - {{ .ProjectName }}_rabbitmq_log:/var/log/rabbitmq
+      - rabbitmq_data:/var/lib/rabbitmq
+      - rabbitmq_log:/var/log/rabbitmq
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "ping"]
       interval: 30s

@@ -488,13 +488,7 @@ func (app *AppConfig) GenerateProjectCompose(logger *slog.Logger) error {
 			serviceDefinition := string(buffer.String())
 
 			templateData.ServiceTemplate = append(templateData.ServiceTemplate, serviceDefinition)
-
-			if preset.Volume != nil {
-				for i, volume := range preset.Volume {
-					preset.Volume[i] = fmt.Sprintf("%s_%s", app.ProjectName, volume)
-				}
-				templateData.Volumes = append(templateData.Volumes, preset.Volume...)
-			}
+			templateData.Volumes = append(templateData.Volumes, preset.Volume...)
 
 			env = append(env, preset.EnvVar...)
 

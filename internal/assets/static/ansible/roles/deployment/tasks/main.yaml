@@ -17,10 +17,13 @@
     name: "{{ project_name }}:latest"
     path: "{{ remote_project_path }}"
     dockerfile: "{{ remote_project_path }}/{{ generated_folder_name }}/conf/Dockerfile"  
+    rebuild: always
+
 
 - name: Deploy application with Docker Compose
   community.docker.docker_compose_v2:
     project_src: "{{ remote_project_path }}/{{ generated_folder_name }}/conf" 
     files: 
       - "{{ project_compose_file_name }}"
+    project_name: "{{ project_name }}"
     state: present

@@ -112,7 +112,7 @@ func DisplaySecretsConfig(logger *slog.Logger, app *services.AppConfig) {
 		logger.Info(fmt.Sprintf("  SSH_PORT:  %d", app.SSHPort))
 		logger.Info("  SSH_KEY:   (See below)")
 
-		keyPath := filepath.Join(app.LocalPath, app.OutputDir, "ansible", "key", user)
+		keyPath := filepath.Join(app.LocalPath, app.OutputDir, "ansible", "key", "CD")
 		sshKey, err := utils.GetSSHKey(keyPath)
 		if err != nil {
 			logger.Warn("Failed to display SSH key.")

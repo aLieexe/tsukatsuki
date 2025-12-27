@@ -1,11 +1,9 @@
 redis:
     image: {{ .DockerImage }} 
     container_name: {{ .ProjectName }}_redis
-    ports:
-      - "6379"
+    restart: always
     volumes:
-      - {{ .ProjectName }}_redis_data:/data
-    restart: unless-stopped
+      - redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

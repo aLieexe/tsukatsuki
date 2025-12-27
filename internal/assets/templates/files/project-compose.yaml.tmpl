@@ -1,7 +1,7 @@
 services:
 {{range .ServiceTemplate }}  {{.}}
     networks:
-    - {{ $.ProjectName }}_network
+    - internal_network
     env_file: 
     - ../../{{ $.EnvFile }}
 
@@ -23,7 +23,7 @@ services:
     {{- end }}
     {{- end }}
     networks:
-    - {{ $.ProjectName }}_network
+    - internal_network
     - proxy_network
     env_file: 
     - ../../{{ $.EnvFile }}
@@ -76,7 +76,7 @@ networks:
   proxy_network:
     external: true
 
-  {{ .ProjectName }}_network:
+  internal_network:
     driver: bridge
     internal: true # blocks all external access
 

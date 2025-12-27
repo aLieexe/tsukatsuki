@@ -1,12 +1,9 @@
 minio:
     image: {{ .DockerImage }}
     container_name: {{ .ProjectName }}_minio
-    restart: unless-stopped
-    ports:
-      - "9000"  # api
-      - "9001"  # console
+    restart: always 
     volumes:
-      - {{ .ProjectName }}_minio_data:/data
+      - minio_data:/data
     command: server /data --console-address ":9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
